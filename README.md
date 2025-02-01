@@ -1,4 +1,4 @@
-# SmartJS-CLI
+# CleverJS-CLI
 
 
 ## Usage

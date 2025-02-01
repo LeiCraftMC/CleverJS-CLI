@@ -1,6 +1,6 @@
 {
-    "name": "@smartjs/cli",
-	"version": "1.0.11",
+    "name": "@cleverjs/cli",
+	"version": "0.1.0",
 	"module": "./dist/esm/index.js",
 	"main": "./dist/cjs/index.js",
 	"types": "./dist/types/index.d.ts",
@@ -14,26 +14,29 @@
 	},
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/LeiCraftMC/SmartJS-CLI"
+        "url": "git+https://github.com/LeiCraftMC/CleverJS-CLI"
     },
     "author": "LeiCraft_",
     "publisher": "LeiCraft_MC",
     "license": "AGPL-3.0-only",
     "bugs": {
-        "url": "https://github.com/LeiCraftMC/SmartJS-CLI/issues"
+        "url": "https://github.com/LeiCraftMC/CleverJS-CLI/issues"
     },
     "keywords": [
         "JavaScript",
         "TypeScript",
         "CLI",
-        "SmartJS",
+        "CleverJS",
         "Terminal",
         "Command"
     ],
-    "homepage": "https://github.com/LeiCraftMC/SmartJS-CLI#readme",
+    "homepage": "https://github.com/LeiCraftMC/CleverJS-CLI#readme",
     "devDependencies": {
         "@types/bun": "^1.2.1",
         "typescript": "^5.6.3",
         "@types/node": "^22.7.3"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
