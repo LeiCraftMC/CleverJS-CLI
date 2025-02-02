@@ -1,3 +1,5 @@
+import { CLIUtils } from "./utils.js";
+import { Dict } from "./types.js";
 
 export abstract class CLICMD {
 
