@@ -67,7 +67,8 @@ export abstract class CLISubCMD extends CLICMD {
         meta.logToConsole(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
-            `Usage: ${parent_args_str}${cmd.usage}`
+            `Usage: ${parent_args_str}${cmd.usage}` +
+            `Aliases: ${cmd.aliases.join(", ")}`
         );
     }
 
