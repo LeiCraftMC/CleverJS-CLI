@@ -67,7 +67,7 @@ export abstract class CLISubCMD extends CLICMD {
         );
     }
 
-    public async run(args: string[], parent_args: string[]) {
+    async run(args: string[], parent_args: string[]) {
         const command_name = args.shift();
         if (!command_name) return await this.run_empty(parent_args);
         if (command_name === "help") return await this.run_help(parent_args);
