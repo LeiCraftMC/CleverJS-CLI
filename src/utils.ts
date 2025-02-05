@@ -19,10 +19,6 @@ export class CLIUtils {
         return parent_args_str;
     }
 
-    static invalidNumberOfArguments(): void {
-        //cli.cmd.info("Invalid number of arguments!");
-    }
-
 }
 
 export function splitStrNTimes(str: string, delim: string, count: number) {
