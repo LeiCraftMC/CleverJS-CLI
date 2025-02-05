@@ -1,10 +1,11 @@
 import { CLICMD } from "./command.js";
+import { CLICMDExecEnvSpec } from "./types.js";
 
 export class CLIUtils {
 
-    static canRunInCurrentEnvironment(cmd: CLICMD) {
+    static canRunInCurrentEnvironment(currentENV: CLICMDExecEnvSpec, cmd: CLICMD) {
         if (cmd.environment === "all") return true;
-        if (Main.environment === "command") {
+        if (currentENV === "shell") {
             return cmd.environment === "shell";
         }
         return cmd.environment === "runtime";
@@ -19,7 +20,7 @@ export class CLIUtils {
     }
 
     static invalidNumberOfArguments(): void {
-        cli.cmd.info("Invalid number of arguments!");
+        //cli.cmd.info("Invalid number of arguments!");
     }
 
 }
