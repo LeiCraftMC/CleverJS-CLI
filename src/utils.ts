@@ -24,3 +24,11 @@ export class CLIUtils {
     }
 
 }
+
+export function splitStrNTimes(str: string, delim: string, count: number) {
+    const parts = str.split(delim);
+    const tail = parts.slice(count).join(delim);
+    const result = parts.slice(0,count);
+    if (tail) result.push(tail);
+    return result;
+}
