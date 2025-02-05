@@ -2,9 +2,9 @@ import { CLISubCMD } from "./command.js";
 import { CLICMDExecEnv, CLICMDExecMeta, CLILogFN } from "./types.js";
 
 export class CLIApp extends CLISubCMD {
-    public name = "root";
-    public description = "CLI Root";
-    public usage = "Command has no usage";
+    readonly name = "root";
+    readonly description = "CLI Root";
+    readonly usage = "Command has no usage";
 
     constructor(
         public environment: CLICMDExecEnv,
