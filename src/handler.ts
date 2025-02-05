@@ -20,12 +20,16 @@ export class CLIApp extends CLISubCMD {
         return;
     }
 
+    async run(args: string[], meta: CLICMDExecMeta = {
+        parent_args: [],
+        environment: this.environment,
+        logToConsole: this.logToConsole
+    }): Promise<void> {
+        return super.run(args, meta);
+    }
+
     async handle(input: string) {
-        await this.run(input.trim().toLowerCase().split(" ").filter(arg => arg), {
-            parent_args: [],
-            environment: this.environment,
-            logToConsole: this.logToConsole
-        });
+        await this.run(input.trim().toLowerCase().split(" ").filter(arg => arg));
     }
 
 }
