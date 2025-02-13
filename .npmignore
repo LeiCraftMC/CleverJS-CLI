@@ -12,5 +12,6 @@ tsconfig.*.json
 CHANGELOG.md
 
 tests
+samples
 docs
 src

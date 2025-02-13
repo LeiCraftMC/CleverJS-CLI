@@ -34,6 +34,9 @@ export abstract class CLISubCMD extends CLICMD {
 
     protected register(command: CLICMD) {
         this.registry[command.name.toLowerCase()] = command;
+        for (const alias of command.aliases) {
+            this.registry[alias.toLowerCase()] = command;
+        }
     }
 
     protected async run_help(meta: CLICMDExecMeta) {
