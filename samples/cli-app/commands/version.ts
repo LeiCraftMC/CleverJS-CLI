@@ -6,7 +6,7 @@ export class VersionCMD extends CLICMD {
     readonly usage = "version";
     readonly aliases = ["-v"];
 
-    run(args: string[], meta: CLICMDExecMeta): Promise<void> {
+    async run(args: string[], meta: CLICMDExecMeta) {
         throw new Error("Method not implemented.");
     }
 
