@@ -6,7 +6,13 @@
     "sourceMap": true,
     "strict": true,
     "skipLibCheck": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@cleverjs/cli": ["./src/index.ts"]
+    }
   },
-	"include": ["src/**/*"]
+	"include": [
+    "src/**/*",
+    "samples/**/*"
+  ]
 }

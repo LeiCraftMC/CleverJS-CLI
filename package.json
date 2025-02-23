@@ -38,8 +38,5 @@
     },
     "publishConfig": {
         "access": "public"
-    },
-    "dependencies": {
-        "@cleverjs/cli": "^1.0.1"
     }
 }

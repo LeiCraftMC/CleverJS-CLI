@@ -6,4 +6,5 @@
 		"module": "commonjs",
 		"removeComments": false
 	},
+	"include": ["src/**/*"]
 }
