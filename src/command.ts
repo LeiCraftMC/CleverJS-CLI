@@ -1,12 +1,12 @@
 import { CLIUtils } from "./utils.js";
-import { CLICMDExecEnvSpec, CLICMDExecMeta, Dict } from "./types.js";
+import { CLICMDAlias, CLICMDExecEnvSpec, CLICMDExecMeta, Dict } from "./types.js";
 
 export abstract class CLICMD {
 
     readonly abstract name: string;
     readonly abstract description: string;
     readonly abstract usage: string;
-    readonly aliases: string[] = [];
+    readonly aliases: CLICMDAlias[] = [];
     
     /**
      * The environment in which the command can be executed.
@@ -35,7 +35,8 @@ export abstract class CLISubCMD extends CLICMD {
     protected register(command: CLICMD) {
         this.registry[command.name.toLowerCase()] = command;
         for (const alias of command.aliases) {
-            this.registry[alias.toLowerCase()] = command;
+            const alias_name = typeof alias === "string" ? alias : alias.name;
+            this.registry[alias_name.toLowerCase()] = command;
         }
     }
 
@@ -46,10 +47,15 @@ export abstract class CLISubCMD extends CLICMD {
                            ` - ${parent_args_str}help: Show available commands`;
 
         for (const [alias, cmd] of Object.entries(this.registry)) {
-            if (alias !== cmd.name) continue;
             if (!CLIUtils.canRunInCurrentEnvironment(meta.environment, cmd)) continue;
+            if (alias !== cmd.name) {
+                if (cmd.aliases.some(a => (a as any).showInHelp)) {
+                    help_message += `\n - ${parent_args_str}${alias}: Alias for ${cmd.name}`;
+                }
+                continue;
+            }
 
-            help_message += `\n - ${parent_args_str}${cmd.name}: ${cmd.description}`;
+            help_message += `\n - ${parent_args_str}${alias}: ${cmd.description}`;
         }
 
         meta.logToConsole(help_message);

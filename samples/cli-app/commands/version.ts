@@ -1,4 +1,4 @@
-import { CLICMD, CLICMDExecMeta } from "@cleverjs/cli";
+import { CLICMD, type CLICMDExecMeta } from "@cleverjs/cli";
 
 export class VersionCMD extends CLICMD {
     readonly name = "version";

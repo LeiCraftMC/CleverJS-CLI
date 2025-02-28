@@ -1,10 +1,12 @@
 import { CLIApp } from '@cleverjs/cli';
 import { VersionCMD } from './commands/version';
+import { FooCMD } from './commands/foo';
 
 class MyCliApp extends CLIApp {
     
     protected registerCommands(): void {
         this.register(new VersionCMD());
+        this.register(new FooCMD());
     }
 
     protected async run_empty(meta: any): Promise<void> {
