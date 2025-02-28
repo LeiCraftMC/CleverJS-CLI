@@ -7,7 +7,7 @@ export class VersionCMD extends CLICMD {
     readonly aliases = ["-v"];
 
     async run(args: string[], meta: CLICMDExecMeta) {
-        throw new Error("Method not implemented.");
+        console.log("Version: 1.0.0");
     }
 
 

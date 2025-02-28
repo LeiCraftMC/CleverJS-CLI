@@ -45,8 +45,10 @@ export abstract class CLISubCMD extends CLICMD {
         let help_message = "Available commands:\n" +
                            ` - ${parent_args_str}help: Show available commands`;
 
-        for (const cmd of Object.values(this.registry)) {
+        for (const [alias, cmd] of Object.entries(this.registry)) {
+            if (alias !== cmd.name) continue;
             if (!CLIUtils.canRunInCurrentEnvironment(meta.environment, cmd)) continue;
+
             help_message += `\n - ${parent_args_str}${cmd.name}: ${cmd.description}`;
         }
 
@@ -67,7 +69,7 @@ export abstract class CLISubCMD extends CLICMD {
         meta.logToConsole(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
-            `Usage: ${parent_args_str}${cmd.usage}` +
+            `Usage: '${parent_args_str}${cmd.usage}'\n` +
             `Aliases: ${cmd.aliases.join(", ")}`
         );
     }
@@ -75,12 +77,17 @@ export abstract class CLISubCMD extends CLICMD {
     async run(args: string[], meta: CLICMDExecMeta) {
         const command_name = args.shift();
         if (!command_name) return await this.run_empty(meta);
-        if (command_name === "help") return await this.run_help(meta);
+
+        if (
+            command_name === "help" ||
+            command_name === "--help" ||
+            command_name === "-h"
+        ) return await this.run_help(meta);
 
         const cmd = this.registry[command_name];
         if (!cmd || !CLIUtils.canRunInCurrentEnvironment(meta.environment, cmd)) return await this.run_notFound(command_name, meta);
 
-        if (args[0] === "--help") return await this.run_sub_help(cmd, meta);
+        if (args[0] === "--help" || args[0] === "-h") return await this.run_sub_help(cmd, meta);
 
         meta.parent_args.push(command_name);
         return await cmd.run(args, meta);
