@@ -22,7 +22,9 @@ export abstract class CLIApp extends CLISubCMD {
 
     protected async run_empty(meta: CLICMDExecMeta) {
         //cli.cmd.info(`Command not recognized. Type "${CLIUtils.parsePArgs(parent_args, true)}help" for available commands.`);
-        return;
+        if (meta.environment === "shell") {
+            return await this.run_help(meta);
+        }
     }
 
     async handle(input: string | string[]) {
