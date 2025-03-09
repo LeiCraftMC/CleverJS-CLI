@@ -37,7 +37,7 @@ export abstract class CLIApp extends CLISubCMD {
                 default_meta
             );
         } else {
-            await this.run(input, default_meta);
+            await this.run(input.map(arg => arg.toLowerCase()), default_meta);
         }
     }
 
