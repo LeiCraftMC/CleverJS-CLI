@@ -27,10 +27,23 @@ export abstract class CLISubCMD extends CLICMD {
 
     protected constructor() {
         super();
-        this.registerCommands();
+        this.onInit();
     }
 
-    protected abstract registerCommands(): void;
+    /**
+     * This function is called when the CLI app is initialized.
+     * You should register all commands here.
+     * 
+     * Example:
+     * ```ts
+     * class MyCliApp extends CLIApp {
+     *     protected onInit() {
+     *         this.register(new VersionCMD());
+     *         this.register(new FooCMD());
+     *     }
+     * }
+     */
+    protected abstract onInit(): void | Promise<void>;
 
     protected register(command: CLICMD) {
         this.registry[command.name.toLowerCase()] = command;

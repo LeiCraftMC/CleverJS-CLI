@@ -4,7 +4,7 @@ import { FooCMD } from './commands/foo';
 
 class MyCliApp extends CLIApp {
     
-    protected registerCommands(): void {
+    protected onInit(): void {
         this.register(new VersionCMD());
         this.register(new FooCMD());
     }
