@@ -15,4 +15,4 @@ class MyCliApp extends CLIApp {
     
 }
 
-new MyCliApp("shell").handle(process.argv.slice(2).join(" "));
+new MyCliApp("shell").handle(process.argv.slice(2));

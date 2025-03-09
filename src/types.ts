@@ -14,7 +14,7 @@ export interface CLILogFN {
 }
 
 export interface CLICMDExecMeta {
-    parent_args: string[];
-    environment: "runtime" | "shell";
-    logToConsole: CLILogFN;
+    readonly parent_args: string[];
+    readonly environment: "runtime" | "shell";
+    readonly logToConsole: CLILogFN;
 }
