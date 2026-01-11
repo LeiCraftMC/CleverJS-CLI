@@ -89,7 +89,7 @@ export abstract class CLISubCMD extends CLICommandGroup implements ICLICommand {
     protected abstract onInit(): void | Promise<void>;
 
     protected async run_help(meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
+        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
 
         let help_message = "Available commands:\n" +
                            ` - ${parent_args_str}help: Show available commands`;
@@ -114,12 +114,12 @@ export abstract class CLISubCMD extends CLICommandGroup implements ICLICommand {
     }
 
     protected async run_notFound(command_name: string, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
+        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
         meta.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
     }
 
     protected async run_sub_help(cmd: CLIBaseCommand, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
+        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
         meta.logger.info(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +

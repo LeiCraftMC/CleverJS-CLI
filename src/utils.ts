@@ -11,7 +11,7 @@ export class CLIUtils {
         return cmd.allowedEnvironment === "runtime";
     }
 
-    static parsePArgs(parent_args: string[], appendSpaceIFNotEmpty = false): string {
+    static parseParentArgs(parent_args: string[], appendSpaceIFNotEmpty = false): string {
         let parent_args_str = parent_args.join(" ");
         if (appendSpaceIFNotEmpty && parent_args_str) {
             parent_args_str += " ";
