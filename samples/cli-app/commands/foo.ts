@@ -1,6 +1,6 @@
-import { CLICMD, type CLICMDExecMeta } from "@cleverjs/cli";
+import { CLIBaseCommand, type CLICMDExecMeta } from "@cleverjs/cli";
 
-export class FooCMD extends CLICMD {
+export class FooCMD extends CLIBaseCommand {
     readonly name = "foo";
     readonly description = "Command for Testing Purposes";
     readonly usage = "foo";

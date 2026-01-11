@@ -1,12 +1,15 @@
 import { CLIUtils } from "./utils.js";
-import { CLICMDAlias, CLICMDExecEnvSpec, CLICMDExecMeta, Dict } from "./types.js";
+import { CLICMDAlias, CLICMDExecEnvSpec, CLICMDExecMeta, } from "./types.js";
+import { CLICommandGroup } from "./commandGroup.js";
 
-export abstract class CLICMD {
 
-    readonly abstract name: string;
-    readonly abstract description: string;
-    readonly abstract usage: string;
-    readonly aliases: CLICMDAlias[] = [];
+export abstract class CLIBaseCommand implements CLIBaseCommand.ICommand {
+
+    readonly name: string;
+    readonly description: string;
+    readonly args: ArgSpec[];
+    readonly usage: string;
+    readonly aliases: CLICMDAlias[];
     
     /**
      * The environment in which the command can be executed.
@@ -15,15 +18,55 @@ export abstract class CLICMD {
      * - `runtime`: The command can be executed only in an interactive runtime environment (e.g., a running application with a console).
      * - `shell`: The command can be executed only in a shell environment (e.g., terminal or command prompt).
      */
-    readonly environment: CLICMDExecEnvSpec = "all";
+    readonly allowedEnvironment: CLICMDExecEnvSpec;
+
+    constructor(options: CLIBaseCommand.Options) {
+        this.name = options.name;
+        this.description = options.description || "No description provided.";
+        this.usage = options.usage || options.name;
+        this.aliases = options.aliases || [];
+        this.allowedEnvironment = options.allowedEnvironment || "all";
+    }
 
     abstract run(args: string[], meta: CLICMDExecMeta): Promise<void>;
 
 }
 
-export abstract class CLISubCMD extends CLICMD {
-    
-    protected readonly registry: Dict<CLICMD> = {};
+export namespace CLIBaseCommand {
+
+    export interface Options {
+        name: string;
+        description?: string;
+        args?: ArgSpec[];
+        usage?: string;
+        aliases?: CLICMDAlias[];
+        allowedEnvironment?: CLICMDExecEnvSpec;
+    }
+
+    export interface ICommand {
+        readonly name: string;
+        readonly description: string;
+        readonly args?: ArgSpec[];
+        readonly usage?: string;
+        readonly aliases: CLICMDAlias[];
+        readonly allowedEnvironment: CLICMDExecEnvSpec;
+        
+        run(args: string[], meta: CLICMDExecMeta): Promise<void>;
+    }
+
+    export interface Context {
+
+    }
+
+}
+
+export abstract class CLISubCMD extends CLICommandGroup implements ICLICommand {
+
+    readonly abstract name: string;
+    readonly abstract description: string;
+    readonly abstract usage: string;
+    readonly aliases: CLICMDAlias[] = [];
+    readonly allowedEnvironment: CLICMDExecEnvSpec = "all";
 
     protected constructor() {
         super();
@@ -45,16 +88,8 @@ export abstract class CLISubCMD extends CLICMD {
      */
     protected abstract onInit(): void | Promise<void>;
 
-    protected register(command: CLICMD) {
-        this.registry[command.name.toLowerCase()] = command;
-        for (const alias of command.aliases) {
-            const alias_name = typeof alias === "string" ? alias : alias.name;
-            this.registry[alias_name.toLowerCase()] = command;
-        }
-    }
-
     protected async run_help(meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.parent_args, true);
+        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
 
         let help_message = "Available commands:\n" +
                            ` - ${parent_args_str}help: Show available commands`;
@@ -71,7 +106,7 @@ export abstract class CLISubCMD extends CLICMD {
             help_message += `\n - ${parent_args_str}${alias}: ${cmd.description}`;
         }
 
-        meta.logToConsole(help_message);
+        meta.logger.info(help_message);
     }
 
     protected async run_empty(meta: CLICMDExecMeta) {
@@ -79,13 +114,13 @@ export abstract class CLISubCMD extends CLICMD {
     }
 
     protected async run_notFound(command_name: string, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.parent_args, true);
-        meta.logToConsole(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
+        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
+        meta.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
     }
 
-    protected async run_sub_help(cmd: CLICMD, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parsePArgs(meta.parent_args, true);
-        meta.logToConsole(
+    protected async run_sub_help(cmd: CLIBaseCommand, meta: CLICMDExecMeta) {
+        const parent_args_str = CLIUtils.parsePArgs(meta.raw_parent_args, true);
+        meta.logger.info(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
             `Usage: '${parent_args_str}${cmd.usage}'\n` +
@@ -108,7 +143,7 @@ export abstract class CLISubCMD extends CLICMD {
 
         if (args[0] === "--help" || args[0] === "-h") return await this.run_sub_help(cmd, meta);
 
-        meta.parent_args.push(command_name);
+        meta.raw_parent_args.push(command_name);
         return await cmd.run(args, meta);
     }
 

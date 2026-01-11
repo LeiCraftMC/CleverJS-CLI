@@ -1,5 +1,4 @@
-import { type Dict } from "./types.js";
-import { splitStrNTimes } from "./utils.js";
+import { Utils } from "./utils.js";
 
 type AllowedTypes = "string" | "number" | "bool";
 
@@ -9,7 +8,7 @@ type TypesMap = {
     bool: boolean | null;
 }
 
-type FlagsSettings = Dict<CMDFlag<AllowedTypes>, string>;
+type FlagsSettings = Record<string, CMDFlag<AllowedTypes>>;
 
 type FlagKeys<T extends FlagsSettings> = keyof T & string;
 type FlagTypes<T extends FlagsSettings> = T[FlagKeys<T>];
@@ -63,7 +62,7 @@ export class CMDFlagsParser<T extends FlagsSettings> {
 
         for (const data of flags) {
 
-            const [flagName, flagValue] = splitStrNTimes(data, "=", 1) as [FlagKeys<T>, string | undefined];
+            const [flagName, flagValue] = Utils.splitStrNTimes(data, "=", 1) as [FlagKeys<T>, string | undefined];
             const flagSettings = this.flagsSettings[flagName];
 
             if (!flagSettings) {

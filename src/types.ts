@@ -1,6 +1,4 @@
 
-export type Dict<T, K extends string | number = string> = Record<K, T>;
-
 export type CLICMDExecEnv = "runtime" | "shell";
 export type CLICMDExecEnvSpec = "all" | "runtime" | "shell";
 
@@ -9,12 +7,16 @@ export type CLICMDAlias = string | {
     showInHelp?: boolean;
 }
 
-export interface CLILogFN {
-    (message: string): void;
+export interface CLILogger {
+    debug(message: string): void;
+    info(message: string): void;
+    warn(message: string): void;
+    error(message: string): void;
 }
 
 export interface CLICMDExecMeta {
-    readonly parent_args: string[];
+    readonly raw_args: string[];
+    readonly raw_parent_args: string[];
     readonly environment: "runtime" | "shell";
-    readonly logToConsole: CLILogFN;
+    readonly logger: CLILogger;
 }
