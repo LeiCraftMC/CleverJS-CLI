@@ -182,13 +182,19 @@ export namespace CLICommandArg {
 
 export namespace CLICommandArg.Utils {
 
-    export function defineCLIArgSpecs<const T extends CLICommandArg.ArgSpecsList>(
-        specs: T & CLICommandArg.Utils.ValidateArgSpecs<T>
-    ): T {
-        return specs;
+    export function defineCLICommand<
+        const FlagsT extends CLICommandArg.ArgSpecsList,
+        const ArgsT extends CLICommandArg.PositionalList = []
+    >(
+        spec: {
+            flags: FlagsT & ValidateFlagSpecs<FlagsT>, 
+            args?: ArgsT & ValidatePositionalOrder<ArgsT>
+        }
+    ): { flags: FlagsT, args: ArgsT } {
+        return spec as any; 
     }
 
-    export type ValidateArgSpecs<T extends CLICommandArg.ArgSpecsList> = {
+    export type ValidateFlagSpecs<T extends CLICommandArg.ArgSpecsList> = {
         [K in keyof T]: T[K] extends { type: "enum", allowedValues: infer V extends ReadonlyArray<string>, default: infer D }
             ? D extends V[number]
                 ? T[K] // It matches, return as is
@@ -196,11 +202,23 @@ export namespace CLICommandArg.Utils {
             : T[K] // Not an enum or no default, return as is
     };
 
+    // Helper to validate Positional order (Required cannot follow Optional)
+    export type ValidatePositionalOrder<T extends CLICommandArg.PositionalList> = 
+        T extends readonly [infer Head, ...infer Tail]
+            ? Head extends { required?: false }
+                ? Tail extends CLICommandArg.PositionalList
+                    ? Tail[number] extends { required: true }
+                        ? "Error: Required argument cannot follow an optional argument"
+                        : T
+                    : T
+                : [Head, ...ValidatePositionalOrder<Tail extends CLICommandArg.PositionalList ? Tail : []>]
+            : T;
+    
 }
 
 export namespace CLICommandArgParser {
 
-    export type ParsedArgs<SpecsT extends ReadonlyArray<CLICommandArg.ArgSpecUnion>> = {
+    export type ParsedFlags<SpecsT extends ReadonlyArray<CLICommandArg.ArgSpecUnion>> = {
         [ArgNameT in SpecsT[number]['name']]: SpecsT extends ReadonlyArray<infer SpecT>
             ? SpecT extends {
                     name: ArgNameT;
@@ -224,6 +242,25 @@ export namespace CLICommandArgParser {
                             : never
                 : never
             : never;
+    }
+
+    export type ParsedPositionals<SpecsT extends CLICommandArg.PositionalList> = {
+        [ArgNameT in SpecsT[number]['name']]: SpecsT extends ReadonlyArray<infer SpecT>
+            ? SpecT extends { name: ArgNameT }
+                ? SpecT extends { variadic: true }
+                    ? string[] // Variadic is always an array of strings
+                    : SpecT extends { required: true }
+                        ? string
+                        : string | undefined
+                : never
+            : never;
+    };
+
+    export type ParsedArgs<
+        T extends { flags: CLICommandArg.ArgSpecsList, args: CLICommandArg.PositionalList }
+    > = {
+        args: ParsedPositionals<T['args']>;
+        flags: ParsedFlags<T['flags']>;
     }
 
 
