@@ -182,16 +182,19 @@ export namespace CLICommandArg {
 
 export namespace CLICommandArg.Utils {
 
-    export function defineCLICommand<
+    export function defineCLIArgSpecs<
         const FlagsT extends CLICommandArg.ArgSpecsList,
         const ArgsT extends CLICommandArg.PositionalList = []
     >(
         spec: {
-            flags: FlagsT & ValidateFlagSpecs<FlagsT>, 
+            flags?: FlagsT & ValidateFlagSpecs<FlagsT>, 
             args?: ArgsT & ValidatePositionalOrder<ArgsT>
         }
     ): { flags: FlagsT, args: ArgsT } {
-        return spec as any; 
+        return {
+            flags: spec.flags ?? [] as any as FlagsT,
+            args: spec.args ?? [] as any as ArgsT
+        }
     }
 
     export type ValidateFlagSpecs<T extends CLICommandArg.ArgSpecsList> = {
@@ -280,24 +283,34 @@ export namespace CLICommandArgParser {
 
 }
 
-const TestSpec = CLICommandArg.Utils.defineCLIArgSpecs([
-    { name: "reqStr", type: "string", required: true, description: "A required string argument", shortName: "s" },
-    { name: "reqNum", type: "number", required: true, description: "A required number argument", shortName: "n" },
+const TestSpec = CLICommandArg.Utils.defineCLIArgSpecs({
+    args: [
+        {
+            name: "inputFile",
+            required: true,
+            description: "Input file path"
+        }
+    ],
+    flags: [
+        { name: "reqStr", type: "string", required: true, description: "A required string argument", shortName: "s" },
+        { name: "reqNum", type: "number", required: true, description: "A required number argument", shortName: "n" },
 
-    { name: "optStr", type: "string", description: "An optional string argument", shortName: "o" },
-    { name: "optNum", type: "number", description: "An optional number argument", shortName: "m" },
+        { name: "optStr", type: "string", description: "An optional string argument", shortName: "o" },
+        { name: "optNum", type: "number", description: "An optional number argument", shortName: "m" },
 
-    { name: "optStrWithDefault", type: "string", default: "defaultString", description: "An optional string argument with default", shortName: "d" },
-    { name: "optNumWithDefault", type: "number", default: 10, description: "An optional number argument with default", shortName: "f" },
+        { name: "optStrWithDefault", type: "string", default: "defaultString", description: "An optional string argument with default", shortName: "d" },
+        { name: "optNumWithDefault", type: "number", default: 10, description: "An optional number argument with default", shortName: "f" },
 
-    { name: "bool1", type: "boolean", description: "An boolean argument", shortName: "b" },
-    { name: "bool2", type: "boolean", description: "Another boolean argument", shortName: "c" },
-    
-    { name: "enum", type: "enum", allowedValues: ["option1", "option2", "option3"], required: true, description: "An enum argument", shortName: "e" },
-    { name: "enumWithDefault", type: "enum", allowedValues: ["option1", "option2", "option3"], default: "option1", description: "An enum argument", shortName: "e" }
-]);
+        { name: "bool1", type: "boolean", description: "An boolean argument", shortName: "b" },
+        { name: "bool2", type: "boolean", description: "Another boolean argument", shortName: "c" },
+        
+        { name: "enum", type: "enum", allowedValues: ["option1", "option2", "option3"], required: true, description: "An enum argument", shortName: "e" },
+        { name: "enumWithDefault", type: "enum", allowedValues: ["option1", "option2", "option3"], default: "option1", description: "An enum argument", shortName: "e" }
+    ]
+});
 
-type TestParsedResult = CLICommandArgParser.ParsedArgs<typeof TestSpec>;
+type TestParsedResultFlags = CLICommandArgParser.ParsedArgs<typeof TestSpec>['flags'];
+type TestParsedResultArgs = CLICommandArgParser.ParsedArgs<typeof TestSpec>['args'];
 
 // things that should work:
 const parseResult = CLICommandArgParser.parse(TestSpec, ["--reqStr=hello", "--reqNum=42", "--bool1"]);
