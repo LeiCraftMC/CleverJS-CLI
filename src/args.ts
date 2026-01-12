@@ -143,6 +143,41 @@ export namespace CLICommandArg {
     export type ArgSpecUnion = ArgSpec<ArgType>;
     export type ArgSpecsList = ReadonlyArray<ArgSpecUnion>;
 
+
+    export namespace Positional {
+        export interface Base<NameT extends string> {
+            name: NameT;
+            description?: string;
+        }
+        
+        export interface Required<NameT extends string> extends Base<NameT> {
+            required: true;
+        }
+
+        export interface Optional<NameT extends string> extends Base<NameT> {
+            required?: false;
+        }
+
+        // Optional: Support for "..." arguments (rest)
+        export interface Variadic<NameT extends string> extends Base<NameT> {
+            variadic: true; 
+        }
+
+        export type Any = Required<string> | Optional<string> | Variadic<string>;
+    }
+
+    export type PositionalList = ReadonlyArray<Positional.Any>;
+
+    // --- ROOT CONFIGURATION ---
+    
+    export interface CommandSpec<
+        FlagsT extends ArgSpecsList,
+        ArgsT extends PositionalList
+    > {
+        args?: ArgsT;
+        flags: FlagsT;
+    }
+
 }
 
 export namespace CLICommandArg.Utils {
