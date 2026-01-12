@@ -1,54 +1,17 @@
 
-export const CLICommandArg = function<NameT extends string, TypeT extends CLICommandArg.ArgType>(
-    name: NameT,
-    type: TypeT,
-    required: boolean = false,
-    defaultValue: CLICommandArg.ArgTypeTypesMapping[TypeT] | null = null,
-    description?: string
-) {
-
-    if (required) {
-        if (typeof defaultValue !== type && defaultValue !== null) {
-            throw new Error(`Default value for required argument '${name}' must be of type '${type}' or null.`);
-        }
-    } else {
-        if (defaultValue !== null && defaultValue !== undefined) {
-            throw new Error(`Default value for optional argument '${name}' must be null or undefined.`);
-        }
-    }
-
-    return {
-        name,
-        type,
-        required,
-        default: defaultValue,
-        description
-    };
-} as unknown as CLICommandArgConstructor;
-
-interface CLICommandArgConstructor {
-
-    new <NameT extends string, TypeT extends CLICommandArg.ArgType>(
-        name: NameT,
-        type: TypeT,
-        required?: false,
-        defaultValue?: null,
-        description?: string
-    ): CLICommandArg.ArgSpec<TypeT>;
-
-    new <NameT extends string, TypeT extends CLICommandArg.ArgType>(
-        name: NameT,
-        type: TypeT,
-        required: true,
-        defaultValue: CLICommandArg.ArgTypeTypesMapping[TypeT] | null,
-        description?: string
-    ): CLICommandArg.ArgSpec<TypeT>;
-}
-
 export class CLICommandArgParser {
 
-    static parse<T extends CLICommandArg.ArgSpecsList>(specs: CLICommandArg.ArgSpecsList, argv: string[], skipUnknownArgs: boolean = false): CLICommandArgParser.ParsingResult<T> {
-        const resultData: CLICommandArgParser.ParsedArgs<T> = {} as CLICommandArgParser.ParsedArgs<T>;
+    static parse<Specs extends CLICommandArg.ArgSpecsList>(specs: Specs, argv: string[], skipUnknownArgs: boolean = false): CLICommandArgParser.ParsingResult<Specs> {
+
+        if (this.hasSpecDuplicates(specs)) {
+            return {
+                success: false,
+                data: null,
+                error: "Argument specifications contain duplicate names or short names."
+            } satisfies CLICommandArgParser.ParsingErrorResult;
+        }
+        
+        const resultData: CLICommandArgParser.ParsedArgs<Specs> = {} as CLICommandArgParser.ParsedArgs<Specs>;
         let index = 0;
 
         for (const spec of specs) {
@@ -74,10 +37,30 @@ export class CLICommandArgParser {
             success: true,
             data: resultData,
             error: null
-        } satisfies CLICommandArgParser.ParsingSuccessResult<T>;
+        } satisfies CLICommandArgParser.ParsingSuccessResult<Specs>;
     }
 
-    private static coerce(type: CLICommandArgParser.ArgType, value: string): unknown {
+    private static hasSpecDuplicates(specs: CLICommandArg.ArgSpecsList): boolean {
+
+        const names = new Set<string>();
+        const shortNames = new Set<string>();
+
+        for (const spec of specs) {
+            if (names.has(spec.name)) {
+                return true;
+            }
+            if (spec.shortName) {
+                if (shortNames.has(spec.shortName)) {
+                    return true;
+                }
+                shortNames.add(spec.shortName);
+            }
+            names.add(spec.name);
+        }
+        return false;
+    }
+
+    private static coerce(type: CLICommandArg.ArgType, value: string): unknown {
         switch (type) {
             case "number": {
                 const n = Number(value);
@@ -97,32 +80,66 @@ export class CLICommandArgParser {
 
 export namespace CLICommandArg {
 
-    export type ArgType = "string" | "number" | "boolean";
+    export type ArgType = "string" | "number" | "boolean" | "enum";
 
-    export type ArgTypeTypesMapping = {
-        string: string;
-        number: number;
-        boolean: boolean;
-    };
+    export namespace ArgType {
+
+        export type KeyValue = "string" | "number";
+        export type Boolean = "boolean";
+        export type Enum = "enum";
+
+        export type TypesMapping = {
+            string: string;
+            number: number;
+            boolean: boolean;
+            enum: string;
+        };
+
+    }
 
     export type ArgSpec<T extends ArgType> = {
-        [K in T]: {
-            name: string;
-            description?: string;
-            type: K;
-            required: true;
-            default: CLICommandArg.ArgTypeTypesMapping[K] | null;
-        } | {
-            name: string;
-            description?: string;
-            type: K;
-            required?: false;
-            default?: null;
-        };
+        [K in T]: K extends ArgType.KeyValue
+            ? ArgSpec.RequiredKeyValue<string, K> | ArgSpec.OptionalKeyValue<string, K>
+            : K extends "boolean"
+                ? ArgSpec.Boolean<string>
+                : K extends "enum"
+                    ? ArgSpec.RequiredEnum<string, ReadonlyArray<string>> | ArgSpec.OptionalEnum<string, ReadonlyArray<string>>
+                    : never
     }[T];
 
+    export namespace ArgSpec {
+
+        export interface Base<NameT extends string, TypeT extends ArgType> {
+            name: NameT;
+            type: TypeT;
+            shortName?: string;
+            description?: string;
+        }
+
+        export interface RequiredKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
+            required: true;
+        }
+
+        export interface OptionalKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
+            default?: CLICommandArg.ArgType.TypesMapping[TypeT];
+        }
+
+        export interface RequiredEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
+            allowedValues: AllowedValuesT;
+            required: true;
+        }
+
+        export interface OptionalEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
+            allowedValues: AllowedValuesT
+            // enums must be either required or have a set default when optional
+            default: AllowedValuesT[number];
+        }
+
+        export interface Boolean<NameT extends string> extends Base<NameT, "boolean"> {}
+    }
+
     export type ArgSpecUnion = ArgSpec<ArgType>;
-    export type ArgSpecsList = ArgSpecUnion[];
+    export type ArgSpecsList = ReadonlyArray<ArgSpecUnion>;
 }
 
 export namespace CLICommandArgParser {
@@ -132,13 +149,23 @@ export namespace CLICommandArgParser {
             ? SpecT extends {
                     name: ArgNameT;
                     type: infer ArgT,
-                    required?: infer IsRequiredT,
-                    //default?: infer DefaultValueT
-                } ? ArgT extends CLICommandArg.ArgType
+                    required?: infer IsRequiredT
+                    allowedValues?: infer AllowedValuesT
+                } ? ArgT extends CLICommandArg.ArgType.KeyValue
+
                     ? IsRequiredT extends true
-                        ? CLICommandArg.ArgTypeTypesMapping[ArgT]
-                        : CLICommandArg.ArgTypeTypesMapping[ArgT] | undefined
-                    : never
+                        ? CLICommandArg.ArgType.TypesMapping[ArgT]
+                        : CLICommandArg.ArgType.TypesMapping[ArgT] | undefined
+                    
+                    : ArgT extends "boolean"
+                        // Boolean args are always false by default
+                        ? boolean
+
+                        : ArgT extends "enum"
+                            ? AllowedValuesT extends ReadonlyArray<string>
+                                ? AllowedValuesT[number]
+                                : never
+                            : never
                 : never
             : never;
     }
@@ -146,7 +173,7 @@ export namespace CLICommandArgParser {
 
     export type ParsingSuccessResult<T extends CLICommandArg.ArgSpecsList> = {
         success: true;
-        data: T;
+        data: ParsedArgs<T>;
         error: null;
     };
 
@@ -160,11 +187,51 @@ export namespace CLICommandArgParser {
 
 }
 
-var TestSpec = [
-    new CLICommandArg("first", "string", true, null),
-    { name: "first", type: "string", required: true, default: "test" },
-    { name: "second", type: "number", required: true, default: null },
-    { name: "third", type: "boolean" }
-] as const;
+const TestSpec = [
+    { name: "reqStr", type: "string", required: true, description: "A required string argument", shortName: "s" },
+    { name: "reqNum", type: "number", required: true, description: "A required number argument", shortName: "n" },
 
-type Test = CLICommandArgParser.ParsedArgs<typeof TestSpec>;
+    { name: "optStr", type: "string", description: "An optional string argument", shortName: "o" },
+    { name: "optNum", type: "number", description: "An optional number argument", shortName: "m" },
+
+    { name: "optStrWithDefault", type: "string", default: "defaultString", description: "An optional string argument with default", shortName: "d" },
+    { name: "optNumWithDefault", type: "number", default: 10, description: "An optional number argument with default", shortName: "f" },
+
+    { name: "bool1", type: "boolean", description: "An boolean argument", shortName: "b" },
+    { name: "bool2", type: "boolean", description: "Another boolean argument", shortName: "c" },
+    
+    { name: "enum", type: "enum", allowedValues: ["option1", "option2", "option3"], required: true, description: "An enum argument", shortName: "e" },
+    { name: "enumWithDefault", type: "enum", allowedValues: ["option1", "option2", "option3"], default: "optiona", description: "An enum argument", shortName: "e" }
+] as const satisfies CLICommandArg.ArgSpecsList;
+
+type TestParsedResult = CLICommandArgParser.ParsedArgs<typeof TestSpec>;
+
+// things that should work:
+const parseResult = CLICommandArgParser.parse(TestSpec, ["--reqStr=hello", "--reqNum=42", "--bool1"]);
+const parseResult2 = CLICommandArgParser.parse(TestSpec, ["--reqStr", "world", "--reqNum", "100", "--bool2"]);
+const parseResult3 = CLICommandArgParser.parse(TestSpec, ["-bc", "--reqStr=test", "--reqNum=7"]); // bools as short flags that can be combined
+const parseResult4 = CLICommandArgParser.parse(TestSpec, ["-s=example", "-n", "3.14", "-b"]); // mix of short and long names
+
+// things that should not work:
+const parseResultErr1 = CLICommandArgParser.parse(TestSpec, ["--bool1=true"]); // bools represented as flags, not key=value
+const parseResultErr2 = CLICommandArgParser.parse(TestSpec, ["--bool2=false"]); // bools represented as flags, not key=value
+const parseResultErr3 = CLICommandArgParser.parse(TestSpec, ["--reqStr=hello"]); // missing required number argument
+const parseResultErr4 = CLICommandArgParser.parse(TestSpec, ["--reqStr=hello", "--reqNum=notANumber"]); // invalid number argument
+const parseResultErr5 = CLICommandArgParser.parse(TestSpec, ["-bs=value", "-n", "10"]); // non booleans short flags cannot be combined
+const parseResultErr6 = CLICommandArgParser.parse(TestSpec, ["-bs", "hello", "-n", "10"]); // non booleans short flags cannot be combined
+
+/* Returns Types:
+{
+    success: true,
+    data: {
+        reqStr: string,
+        reqNum: number,
+        bool1: boolean | undefined
+    },
+    error: null
+} | {
+    success: false,
+    data: null,
+    error: string
+}
+*/
