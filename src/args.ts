@@ -40,6 +40,8 @@ export class CLICommandArgParser {
         } satisfies CLICommandArgParser.ParsingSuccessResult<Specs>;
     }
 
+    
+
     private static hasSpecDuplicates(specs: CLICommandArg.ArgSpecsList): boolean {
 
         const names = new Set<string>();
@@ -140,6 +142,25 @@ export namespace CLICommandArg {
 
     export type ArgSpecUnion = ArgSpec<ArgType>;
     export type ArgSpecsList = ReadonlyArray<ArgSpecUnion>;
+
+}
+
+export namespace CLICommandArg.Utils {
+
+    export function defineCLIArgSpecs<const T extends CLICommandArg.ArgSpecsList>(
+        specs: T & CLICommandArg.Utils.ValidateArgSpecs<T>
+    ): T {
+        return specs;
+    }
+
+    export type ValidateArgSpecs<T extends CLICommandArg.ArgSpecsList> = {
+        [K in keyof T]: T[K] extends { type: "enum", allowedValues: infer V extends ReadonlyArray<string>, default: infer D }
+            ? D extends V[number]
+                ? T[K] // It matches, return as is
+                : Omit<T[K], "default"> & { default: V[number] } // Mismatch! Force 'default' to be the union of allowed values to trigger error
+            : T[K] // Not an enum or no default, return as is
+    };
+
 }
 
 export namespace CLICommandArgParser {
@@ -187,7 +208,7 @@ export namespace CLICommandArgParser {
 
 }
 
-const TestSpec = [
+const TestSpec = CLICommandArg.Utils.defineCLIArgSpecs([
     { name: "reqStr", type: "string", required: true, description: "A required string argument", shortName: "s" },
     { name: "reqNum", type: "number", required: true, description: "A required number argument", shortName: "n" },
 
@@ -201,8 +222,8 @@ const TestSpec = [
     { name: "bool2", type: "boolean", description: "Another boolean argument", shortName: "c" },
     
     { name: "enum", type: "enum", allowedValues: ["option1", "option2", "option3"], required: true, description: "An enum argument", shortName: "e" },
-    { name: "enumWithDefault", type: "enum", allowedValues: ["option1", "option2", "option3"], default: "optiona", description: "An enum argument", shortName: "e" }
-] as const satisfies CLICommandArg.ArgSpecsList;
+    { name: "enumWithDefault", type: "enum", allowedValues: ["option1", "option2", "option3"], default: "option1", description: "An enum argument", shortName: "e" }
+]);
 
 type TestParsedResult = CLICommandArgParser.ParsedArgs<typeof TestSpec>;
 
