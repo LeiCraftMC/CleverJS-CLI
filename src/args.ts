@@ -1,7 +1,7 @@
 
 export class CLICommandArgParser {
 
-    static parse<Specs extends CLICommandArg.ArgSpecsList>(specs: Specs, argv: string[], skipUnknownArgs: boolean = false): CLICommandArgParser.ParsingResult<Specs> {
+    static parse<Specs extends CLICommandArg.CommandSpecUnion>(specs: Specs, argv: string[], skipUnknownArgs: boolean = false): CLICommandArgParser.ParsingResult<Specs> {
 
         if (this.hasSpecDuplicates(specs)) {
             return {
@@ -174,9 +174,11 @@ export namespace CLICommandArg {
         FlagsT extends ArgSpecsList,
         ArgsT extends PositionalList
     > {
-        args?: ArgsT;
+        args: ArgsT;
         flags: FlagsT;
     }
+
+    export type CommandSpecUnion = CommandSpec<ArgSpecsList, PositionalList>;
 
 }
 
@@ -259,15 +261,16 @@ export namespace CLICommandArgParser {
             : never;
     };
 
-    export type ParsedArgs<
-        T extends { flags: CLICommandArg.ArgSpecsList, args: CLICommandArg.PositionalList }
-    > = {
+    export type ParsedArgs<T extends {
+        flags: CLICommandArg.ArgSpecsList,
+        args: CLICommandArg.PositionalList
+    }> = {
         args: ParsedPositionals<T['args']>;
         flags: ParsedFlags<T['flags']>;
     }
 
 
-    export type ParsingSuccessResult<T extends CLICommandArg.ArgSpecsList> = {
+    export type ParsingSuccessResult<T extends CLICommandArg.CommandSpecUnion> = {
         success: true;
         data: ParsedArgs<T>;
         error: null;
@@ -279,7 +282,7 @@ export namespace CLICommandArgParser {
         error: string;
     };
 
-    export type ParsingResult<T extends CLICommandArg.ArgSpecsList> = ParsingSuccessResult<T> | ParsingErrorResult;
+    export type ParsingResult<T extends CLICommandArg.CommandSpecUnion> = ParsingSuccessResult<T> | ParsingErrorResult;
 
 }
 
