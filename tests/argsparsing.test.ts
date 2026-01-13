@@ -13,8 +13,47 @@ const spec = CLICommandArg.defineCLIArgSpecs({
     ]
 });
 
+
 describe("Argument Parsing", () => {
+    
+    test("should parse successfully with all arguments and flags", async () => {
+    
+        expect(await CLICommandArgParser.parse(spec, ["input.txt", "output.txt", "--verbose", "--timeout=60"])).toEqual({
+            success: true,
+            error: null,
+            data: {
+                args: {
+                    input: "input.txt",
+                    output: "output.txt"
+                },
+                flags: {
+                    verbose: true,
+                    timeout: 60
+                }
+            }
+        });
+
+        // non non required args missing
+        expect(await CLICommandArgParser.parse(spec, ["input.txt"])).toEqual({
+            success: true,
+            error: null,
+            data: {
+                args: {
+                    input: "input.txt",
+                    output: undefined
+                },
+                flags: {
+                    verbose: false,
+                    timeout: 30
+                }
+            }
+        });
 
 
+    });
+
+    test("should return error for missing required argument", async () => {
+        
+    });
 
 });

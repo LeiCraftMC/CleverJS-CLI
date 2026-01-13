@@ -1,27 +1,31 @@
 
 export class CLICommandArgParser {
 
-    static parse<Specs extends CLICommandArg.ArgSpecDefault>(specs: Specs, argv: string[], skipUnknownArgs: boolean = false): CLICommandArgParser.ParsingResult<Specs> {
+    constructor(
+        protected readonly spec: CLICommandArg.ArgSpecDefault
+    ) {}
+
+    async parse<Specs extends CLICommandArg.ArgSpecDefault>(argv: string[], skipUnknownArgs: boolean = false): Promise<CLICommandArgParser.ParsingResult<Specs>> {
         
         const resultData: CLICommandArgParser.ParsedArgs<Specs> = {} as CLICommandArgParser.ParsedArgs<Specs>;
         let index = 0;
 
-        for (const spec of specs) {
+        for (const flagSpec of this.spec.flags) {
             const raw = argv[index];
 
             if (raw === undefined) {
-                if (spec.required && spec.default === undefined) {
+                if (flagSpec.required && flagSpec.default === undefined) {
                     return {
                         success: false,
                         data: null,
-                        error: `Missing required argument: ${spec.name}`
+                        error: `Missing required argument: ${flagSpec.name}`
                     } satisfies CLICommandArgParser.ParsingErrorResult;
                 }
-                resultData[spec.name] = spec.default;
+                resultData[flagSpec.name] = flagSpec.default;
                 continue;
             }
 
-            resultData[spec.name] = this.coerceValue(spec.type, raw);
+            resultData[flagSpec.name] = this.coerceValue(flagSpec.type, raw);
             index++;
         }
 
