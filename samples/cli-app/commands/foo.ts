@@ -1,12 +1,16 @@
-import { CLIBaseCommand, type CLICMDExecMeta } from "@cleverjs/cli";
+import { CLIBaseCommand } from "@cleverjs/cli";
 
 export class FooCMD extends CLIBaseCommand {
-    readonly name = "foo";
-    readonly description = "Command for Testing Purposes";
-    readonly usage = "foo";
-    readonly aliases = [{ name: "bar", showInHelp: true }];
 
-    async run(args: string[], meta: CLICMDExecMeta) {
+    constructor() {
+        super({
+            name: "foo",
+            description: "Command for Testing Purposes",
+            aliases: [{ name: "bar", showInHelp: true }]
+        });
+    }
+
+    async run(args: any) {
         console.log("Foo: bar");
     }
 }

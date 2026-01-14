@@ -10,7 +10,7 @@ export class CLIUtils {
         return commandNameRegex.test(name);
     }
 
-    static canRunInCurrentEnvironment(currentENV: CLICMDExecEnvSpec, cmd: CLIBaseCommand.ICommand<CLICommandArg.ArgSpecDefault>): boolean {
+    static canRunInCurrentEnvironment(currentENV: CLICMDExecEnvSpec, cmd: { allowedEnvironment: CLICMDExecEnvSpec }): boolean {
         if (cmd.allowedEnvironment === "all") return true;
         if (currentENV === "shell") {
             return cmd.allowedEnvironment === "shell";
@@ -32,6 +32,34 @@ export class CLIUtils {
         const result = parts.slice(0,count);
         if (tail) result.push(tail);
         return result;
+    }
+
+    static generateUsageByArgSpec(argSpec: CLICommandArg.ArgSpecDefault): string {
+
+        const parts: string[] = [];
+
+        let veradicPart: string | null = null;
+
+        for (const arg of argSpec.args) {
+            if ((arg as any).variadic) {
+                // add at end
+                veradicPart = (arg as any).required ? `<${arg.name}...>` : `[${arg.name}...]`;
+            } else {
+                parts.push((arg as any).required ? `<${arg.name}>` : `[${arg.name}]`);
+            }
+        }
+
+        for (const flag of argSpec.flags) {
+            const flagPart = (flag as any).shortName ? `--${flag.name}|-${(flag as any).shortName}` : `--${flag.name}`;
+
+            parts.push((flag as any).required ? `${flagPart} <value>` : `[${flagPart} <value>]`);
+        }
+
+        if (veradicPart) {
+            parts.push(veradicPart);
+        }
+
+        return parts.join(" ");
     }
 
 }

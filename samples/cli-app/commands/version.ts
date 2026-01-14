@@ -1,12 +1,16 @@
-import { CLIBaseCommand, type CLICMDExecMeta } from "@cleverjs/cli";
+import { CLIBaseCommand } from "@cleverjs/cli";
 
 export class VersionCMD extends CLIBaseCommand {
-    readonly name = "version";
-    readonly description = "Show the version of the CLI app";
-    readonly usage = "version";
-    readonly aliases = ["-v"];
 
-    async run(args: string[], meta: CLICMDExecMeta) {
+    constructor() {
+        super({
+            name: "version",
+            description: "Show the version of the CLI app",
+            aliases: ["-v"]
+        });
+    }
+
+    async run(args: any) {
         console.log("Version: 1.0.0");
     }
 

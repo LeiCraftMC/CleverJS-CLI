@@ -1,5 +1,6 @@
-import { CLICommandArg } from "./args";
-import { type CLIBaseCommand } from "./command";
+import { Deferred } from "@cleverjs/utils";
+import { CLICommandArg, CLICommandArgParser } from "./args";
+import { CLIBaseCommand } from "./command";
 import { CLICMDAlias, CLICMDExecEnvSpec, CLICommandContext } from "./types";
 import { CLIUtils } from "./utils";
 
@@ -11,9 +12,9 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
     readonly aliases: CLICMDAlias[];
     readonly allowedEnvironment: CLICMDExecEnvSpec;
 
-    readonly middleware: CLISubCommandGroup.IMiddleware<ArgsSpecT>[];
+    protected readonly middleware: CLISubCommandGroup.IMiddleware<ArgsSpecT>[];
 
-    protected readonly registry: Map<string, CLIBaseCommand.ICommand<ArgsSpecT> | CLISubCommandGroup.IGroup<ArgsSpecT>> = new Map();
+    protected readonly registry: Map<string, CLIBaseCommand<ArgsSpecT> | CLISubCommandGroup<ArgsSpecT>> = new Map();
 
     constructor(options: CLISubCommandGroup.Options<ArgsSpecT>) {
 
@@ -23,7 +24,16 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
         this.name = options.name;
         this.description = options.description || "No description provided.";
+
         this.args = options.args || { args: [], flags: [] } as any as ArgsSpecT;
+
+        (this.args.args as Array<CLICommandArg.Positional.Spec<any>>).push({
+            name: "__rest_args",
+            variadic: true,
+            type: "string",
+            description: "Rest arguments"
+        });
+
         this.aliases = options.aliases || [];
         this.allowedEnvironment = options.allowedEnvironment || "all";
 
@@ -36,9 +46,9 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
         return this;
     }
 
-    public register(command: CLIBaseCommand.ICommand<ArgsSpecT>): this;
-    public register(command: CLISubCommandGroup.IGroup<ArgsSpecT>): this;
-    public register(command: CLIBaseCommand.ICommand<ArgsSpecT> | CLISubCommandGroup.IGroup<ArgsSpecT>): this {
+    public register(command: CLIBaseCommand<ArgsSpecT>): this;
+    public register(command: CLISubCommandGroup<ArgsSpecT>): this;
+    public register(command: CLIBaseCommand<ArgsSpecT> | CLISubCommandGroup<ArgsSpecT>): this {
 
         this.registry.set(command.name.toLowerCase(), command);
 
@@ -50,13 +60,13 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
         return this;
     }
 
-    protected async run_help(ctx: CLICommandContext) {
+    protected async onHelp(ctx: CLICommandContext) {
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
 
         let help_message = "Available commands:\n" +
                            ` - ${parent_args_str}help: Show available commands`;
 
-        for (const [alias, cmd] of Object.entries(this.registry)) {
+        for (const [alias, cmd] of this.registry.entries()) {
             if (!CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) continue;
             if (alias !== cmd.name) {
                 if (cmd.aliases.some(a => (a as any).showInHelp)) {
@@ -71,43 +81,107 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
         ctx.logger.info(help_message);
     }
 
-    protected async run_empty(ctx: CLICommandContext) {
-        return await this.run_help(ctx);
+    protected async onEmpty(ctx: CLICommandContext) {
+        return await this.onHelp(ctx);
     }
 
-    protected async run_notFound(command_name: string, ctx: CLICommandContext) {
+    protected async onNotFound(command_name: string, ctx: CLICommandContext) {
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
         ctx.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
     }
 
-    protected async run_sub_help(cmd: CLIBaseCommand, ctx: CLICommandContext) {
+    protected async onSubHelp(cmd: CLIBaseCommand, ctx: CLICommandContext) {
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
         ctx.logger.info(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
             // generate usage string form args spec
-            `Usage: '${parent_args_str}${cmd.usage}'\n` +
+            `Usage: '${parent_args_str} ${cmd.name} ${CLIUtils.generateUsageByArgSpec(cmd.args)}'\n` +
             `Aliases: ${cmd.aliases.join(", ")}`
         );
     }
 
+    protected async callNextMiddleware(index: 0, parsedArgs: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;
+    protected async callNextMiddleware(index: number, parsedArgs: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<void>;
+    protected async callNextMiddleware(index: number, parsedArgs: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<void | boolean> {
+
+        if (this.middleware.length === 0) return Promise.resolve(true);
+
+        const result = new Deferred<boolean>();
+
+        if (index < this.middleware.length - 1) {
+            return this.middleware[index](parsedArgs, ctx, () => this.callNextMiddleware(index + 1, parsedArgs, ctx));
+        }
+
+        if (index === this.middleware.length - 1) {
+            return this.middleware[index](parsedArgs, ctx, async () => {
+                // continue execution
+                result.resolve(true);
+                return;
+            });
+        }
+
+        // dont continue execution
+        if (!result.hasResolved()) {
+            result.resolve(false);
+        }
+
+        return result;
+    }
+
     async dispatch(args: string[], ctx: CLICommandContext) {
         const command_name = args.shift();
-        if (!command_name) return await this.run_empty(ctx);
+        if (!command_name) return await this.onEmpty(ctx);
 
         if (
             command_name === "help" ||
             command_name === "--help" ||
             command_name === "-h"
-        ) return await this.run_help(ctx);
+        ) return await this.onHelp(ctx);
+
+        const groupArgParser = new CLICommandArgParser(this.args);
+        const parsedGroupArgs = await groupArgParser.parse(args);
+
+        if (!parsedGroupArgs.success) {
+            ctx.logger.error(`Error parsing arguments for command group '${this.name}': ${parsedGroupArgs.error}`);
+            return;
+        }
+
+        const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data, ctx);
+        if (!continueExecution) return;
 
         const cmd = this.registry.get(command_name);
-        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.run_notFound(command_name, ctx);
+        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.onNotFound(command_name, ctx);
 
-        if (args[0] === "--help" || args[0] === "-h") return await this.run_sub_help(cmd, ctx);
+        if (args[0] === "--help" || args[0] === "-h") {
+
+            if (cmd instanceof CLIBaseCommand) {
+                return await this.onSubHelp(cmd, ctx);
+            }
+            // if group, let the subgroup handle help
+        }
 
         ctx.raw_parent_args.push(command_name);
-        return await cmd.run(args, ctx);
+        
+        if (cmd instanceof CLIBaseCommand) {
+
+            if (cmd.args) {
+
+                const cmdArgParser = new CLICommandArgParser(cmd.args);
+
+                const parsedCmdArgs = await cmdArgParser.parse(args);
+
+                if (!parsedCmdArgs.success) {
+                    ctx.logger.error(`Error parsing arguments for command '${cmd.name}': ${parsedCmdArgs.error}`);
+                    return;
+                }
+
+                return await cmd.run(parsedCmdArgs.data, ctx);
+            }
+            return await cmd.run({ args: {}, flags: {} } as any, ctx);
+        }
+
+        await cmd.dispatch(args, ctx);
     }
 
 }
@@ -115,11 +189,10 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 export namespace CLISubCommandGroup {
 
     export interface IMiddleware<ArgsT extends CLICommandArg.ArgSpecDefault> {
-        (args: ArgsT, ctx: CLICommandContext, next: () => Promise<void>): Promise<void>;
+        (args: CLICommandArgParser.ParsedArgs<ArgsT>, ctx: CLICommandContext, next: () => Promise<void>): Promise<void>;
     }
 
     export interface IGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault> extends Omit<CLIBaseCommand.ICommand<ArgsSpecT>, "run"> {
-        middleware: IMiddleware<ArgsSpecT>[];
         dispatch(args: string[], ctx: CLICommandContext): Promise<void>;
     }
 
