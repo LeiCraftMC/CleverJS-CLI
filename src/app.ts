@@ -1,14 +1,14 @@
-import { CLISubCMD } from "./command.js";
-import { CLICMDExecEnv, CLICMDExecMeta, CLILogger } from "./types.js";
+import { CLISubCommandGroup } from "./commandGroup";
+import { CLICMDExecEnv, CLICommandContext, CLILogger } from "./types.js";
 
 export interface CLIApp {
     /**
      * @deprecated Use {@link CLIApp.handle} instead.
      */
-    run(args: string[], meta: CLICMDExecMeta): Promise<void>;
+    run(args: string[], ctx: CLICommandContext): Promise<void>;
 }
 
-export abstract class CLIApp extends CLISubCMD {
+export abstract class CLIApp extends CLISubCommandGroup {
     readonly name = "root";
     readonly description = "CLI Root";
     readonly usage = "Command has no usage";
@@ -20,15 +20,15 @@ export abstract class CLIApp extends CLISubCMD {
         super();
     }
 
-    protected async run_empty(meta: CLICMDExecMeta) {
+    protected async run_empty(ctx: CLICommandContext) {
         //cli.cmd.info(`Command not recognized. Type "${CLIUtils.parsePArgs(parent_args, true)}help" for available commands.`);
-        if (meta.environment === "shell") {
-            return await this.run_help(meta);
+        if (ctx.environment === "shell") {
+            return await this.run_help(ctx);
         }
     }
 
     async handle(input: string | string[]) {
-        const default_meta: CLICMDExecMeta = {
+        const default_meta: CLICommandContext = {
             raw_parent_args: [],
             environment: this.allowedEnvironment,
             logger: this.logger
