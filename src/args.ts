@@ -407,7 +407,7 @@ export namespace CLICommandArg {
         flags: FlagsT;
     }
 
-    export type ArgSpecDefault = ArgSpec<CLICommandArg.Flag.SpecList, CLICommandArg.Positional.SpecList>;
+    export type ArgSpecDefault = ArgSpec<CLICommandArg.Positional.SpecList, CLICommandArg.Flag.SpecList>;
 
 
     export function defineCLIArgSpecs<const PositionalT extends CLICommandArg.Positional.SpecList, const FlagsT extends CLICommandArg.Flag.SpecList>(
