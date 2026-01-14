@@ -154,7 +154,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
         const restArgs = (parsedGroupArgs.data.args as any)["__rest_args"] as string[];
 
-        const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data, ctx);
+        const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data as CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx);
         if (!continueExecution) return;
 
         const cmd = this.registry.get(command_name);
