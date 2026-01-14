@@ -583,6 +583,7 @@ export namespace CLICommandArg.Positional {
         export interface Variadic<NameT extends string> extends Base<NameT, "string"> {
             variadic: true;
             required?: false;
+            default?: never;
         }
     }
 
