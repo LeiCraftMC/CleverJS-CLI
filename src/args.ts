@@ -5,7 +5,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
         protected readonly spec: SpecT
     ) {}
 
-    async parse(argv: string[], skipUnknownArgs: boolean = false): Promise<CLICommandArgParser.ParsingResult<SpecT>> {
+    async parse(argv: string[]): Promise<CLICommandArgParser.ParsingResult<SpecT>> {
         
         const resultData = await this.parseRawArgv(argv);
         if (!resultData.success) {
@@ -90,6 +90,13 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
+                        
+                        if ((this.spec.args[positionalIndex] as any).variadic) {
+                            // consume all remaining args if variadic
+                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            break;
+                        }
+
                         return {
                             data: null,
                             success: false,
@@ -128,6 +135,13 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
+                        
+                        if ((this.spec.args[positionalIndex] as any).variadic) {
+                            // consume all remaining args if variadic
+                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            break;
+                        }
+
                         return {
                             data: null,
                             success: false,
@@ -179,6 +193,13 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         
                         const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                         if (!spec) {
+                            
+                            if ((this.spec.args[positionalIndex] as any).variadic) {
+                                // consume all remaining args if variadic
+                                (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                                break;
+                            }
+
                             return {
                                 data: null,
                                 success: false,
@@ -202,6 +223,13 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         for (const flagChar of flagChars) {
                             const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                             if (!spec) {
+
+                                if ((this.spec.args[positionalIndex] as any).variadic) {
+                                    // consume all remaining args if variadic
+                                    (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                                    break;
+                                }
+
                                 return {
                                     data: null,
                                     success: false,
@@ -224,6 +252,13 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                     const flagChar = flagChars[0];
                     const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                     if (!spec) {
+
+                        if ((this.spec.args[positionalIndex] as any).variadic) {
+                            // consume all remaining args if variadic
+                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            break;
+                        }
+
                         return {
                             data: null,
                             success: false,

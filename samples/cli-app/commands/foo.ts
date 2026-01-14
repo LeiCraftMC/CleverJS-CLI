@@ -6,7 +6,25 @@ export class FooCMD extends CLIBaseCommand {
         super({
             name: "foo",
             description: "Command for Testing Purposes",
-            aliases: [{ name: "bar", showInHelp: true }]
+            aliases: [{ name: "bar", showInHelp: true }],
+            args: {
+                args: [
+                    {
+                        name: "input",
+                        description: "Input value",
+                        required: false,
+                        type: "string"
+                    }
+                ],
+                flags: [
+                    {
+                        name: "verbose",
+                        shortName: "v",
+                        description: "Enable verbose output",
+                        type: "boolean"
+                    }
+                ]
+            }
         });
     }
 

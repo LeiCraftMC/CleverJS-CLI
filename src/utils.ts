@@ -34,7 +34,7 @@ export class CLIUtils {
         return result;
     }
 
-    static generateUsageByArgSpec(argSpec: CLICommandArg.ArgSpecDefault): string {
+    static generateUsageByArgSpec(argSpec: CLICommandArg.ArgSpecDefault, insertSpaceBeforeIfNotEmpty = false): string {
 
         const parts: string[] = [];
 
@@ -58,7 +58,9 @@ export class CLIUtils {
         if (veradicPart) {
             parts.push(veradicPart);
         }
-
+        if (insertSpaceBeforeIfNotEmpty && parts.length > 0) {
+            return " " + parts.join(" ");
+        }
         return parts.join(" ");
     }
 

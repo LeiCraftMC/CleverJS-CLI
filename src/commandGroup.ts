@@ -84,12 +84,15 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
     }
 
     protected async onSubHelp(cmd: CLIBaseCommand, ctx: CLICommandContext) {
+
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
+        const usageStr = CLIUtils.generateUsageByArgSpec(cmd.args, true);
+
         ctx.logger.info(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
             // generate usage string form args spec
-            `Usage: '${parent_args_str} ${cmd.name} ${CLIUtils.generateUsageByArgSpec(cmd.args)}'\n` +
+            `Usage: '${parent_args_str}${cmd.name}${usageStr}'\n` +
             `Aliases: ${cmd.aliases.join(", ")}`
         );
     }
