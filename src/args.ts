@@ -66,10 +66,11 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
         const positionals: Record<string, string | boolean | number> = {};
         const flags: Record<string, string | boolean | number> = {};
 
-        let i = 0;
+        let index = 0;
+        let positionalIndex = 0;
 
-        while (i < argv.length) {
-            const token = argv[i];
+        while (index < argv.length) {
+            const token = argv[index];
 
             if (token.startsWith("--")) {
                 
@@ -140,7 +141,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     } else {
 
-                        const flagValue = argv[i + 1];
+                        const flagValue = argv[index + 1];
                         const coerced = this.coerceValue(spec, flagValue);
                         if (!coerced.success) {
                             return {
@@ -151,7 +152,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         }
                         flags[flagName] = coerced.value;
 
-                        i++; // consume the value token
+                        index++; // consume the value token
 
                     }
 
@@ -235,7 +236,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     } else {
 
-                        const flagValue = argv[i + 1];
+                        const flagValue = argv[index + 1];
                         const coerced = this.coerceValue(spec, flagValue);
                         if (!coerced.success) {
                             return {
@@ -245,7 +246,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                             }
                         }
                         flags[spec.name] = coerced.value;
-                        i++; // consume the value token
+                        index++; // consume the value token
 
                     }
 
@@ -254,7 +255,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
             } else {
 
                 // Positional argument
-                const positionalSpec = this.spec.args[i];
+                const positionalSpec = this.spec.args[positionalIndex];
 
                 if (!positionalSpec) {
                     return {
@@ -266,7 +267,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                 if ((positionalSpec as any).variadic) {
                     // consume all remaining args
-                    positionals[positionalSpec.name] = argv.slice(i).join(" ");
+                    (positionals as any)[positionalSpec.name] = argv.slice(index);
                     break;
 
                 } else {
@@ -283,9 +284,11 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                 }
 
+                positionalIndex++;
+
             }
 
-            i++;
+            index++;
         }
 
         return {

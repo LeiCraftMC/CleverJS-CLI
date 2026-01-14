@@ -134,7 +134,7 @@ describe("Argument Parsing for SubCommandGroups", () => {
 
     test("should return error for missing required argument", async () => {
         
-        expect(await parser.parse(["--verbose", "extra1", "extra2"])).toEqual({
+        expect(await parser.parse(["--verbose"])).toEqual({
             success: false,
             error: "Missing required argument: 'input'",
             data: null
