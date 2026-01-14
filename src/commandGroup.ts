@@ -93,7 +93,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             `Description: ${cmd.description}\n` +
             // generate usage string form args spec
             `Usage: '${parent_args_str}${cmd.name}${usageStr}'\n` +
-            `Aliases: ${cmd.aliases.join(", ")}`
+            `Aliases: ${ cmd.aliases.join(", ") || "None" }`
         );
     }
 
