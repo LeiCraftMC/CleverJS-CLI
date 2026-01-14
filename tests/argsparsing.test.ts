@@ -159,14 +159,14 @@ describe("Argument Parsing for SubCommandGroups", () => {
 
     test("should parse successfully with all arguments and flags", async () => {
 
-        expect(await parser.parse(["input.txt", "output.txt", "--verbose", "--timeout=60", "extra1", "extra2"])).toEqual({
+        expect(await parser.parse(["input.txt", "output.txt", "--verbose", "--timeout=60", "extra1", "--extra2"])).toEqual({
             success: true,
             error: null,
             data: {
                 args: {
                     input: "input.txt",
                     output: "output.txt",
-                    rest: ["extra1", "extra2"]
+                    rest: ["extra1", "--extra2"]
                 },
                 flags: {
                     verbose: true,

@@ -27,13 +27,6 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
         this.args = options.args || { args: [], flags: [] } as any as ArgsSpecT;
 
-        (this.args.args as Array<CLICommandArg.Positional.Spec<any>>).push({
-            name: "__rest_args",
-            variadic: true,
-            type: "string",
-            description: "Rest arguments"
-        });
-
         this.aliases = options.aliases || [];
         this.allowedEnvironment = options.allowedEnvironment || "all";
 
@@ -139,7 +132,19 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             command_name === "-h"
         ) return await this.onHelp(ctx);
 
-        const groupArgParser = new CLICommandArgParser(this.args);
+        const groupArgParser = new CLICommandArgParser({
+
+            // add a variadic positional arg to capture rest args
+            args: this.args.args.concat([{
+                name: "__rest_args",
+                type: "string",
+                variadic: true,
+                description: "Rest arguments"
+            }]),
+            
+            flags: this.args.flags
+        });
+
         const parsedGroupArgs = await groupArgParser.parse(args);
 
         if (!parsedGroupArgs.success) {
@@ -147,13 +152,15 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             return;
         }
 
+        const restArgs = (parsedGroupArgs.data.args as any)["__rest_args"] as string[];
+
         const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data, ctx);
         if (!continueExecution) return;
 
         const cmd = this.registry.get(command_name);
         if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.onNotFound(command_name, ctx);
 
-        if (args[0] === "--help" || args[0] === "-h") {
+        if (restArgs[0] === "--help" || restArgs[0] === "-h") {
 
             if (cmd instanceof CLIBaseCommand) {
                 return await this.onSubHelp(cmd, ctx);
@@ -169,7 +176,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
                 const cmdArgParser = new CLICommandArgParser(cmd.args);
 
-                const parsedCmdArgs = await cmdArgParser.parse(args);
+                const parsedCmdArgs = await cmdArgParser.parse(restArgs);
 
                 if (!parsedCmdArgs.success) {
                     ctx.logger.error(`Error parsing arguments for command '${cmd.name}': ${parsedCmdArgs.error}`);
@@ -181,7 +188,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             return await cmd.run({ args: {}, flags: {} } as any, ctx);
         }
 
-        await cmd.dispatch(args, ctx);
+        await cmd.dispatch(restArgs, ctx);
     }
 
 }
