@@ -159,7 +159,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
         const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data as CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx);
         if (!continueExecution) return;
-
+    
         const cmd = this.registry.get(command_name);
         if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.onNotFound(command_name, ctx);
 

@@ -17,6 +17,12 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
             if (!(argSpec.name in resultData.data.args)) {
 
+                if ((argSpec as any).variadic) {
+                    // Variadic args default to empty array
+                    (resultData.data.args as Record<string, any>)[argSpec.name] = [];
+                    continue;
+                }
+
                 if ((argSpec as any).required) {
 
                     return {
@@ -576,6 +582,7 @@ export namespace CLICommandArg.Positional {
         // Optional: Support for "..." arguments (rest)
         export interface Variadic<NameT extends string> extends Base<NameT, "string"> {
             variadic: true;
+            required?: false;
         }
     }
 
