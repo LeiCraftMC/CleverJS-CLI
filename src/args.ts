@@ -88,7 +88,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     const flagValue = token.substring(eqIndex + 1);
 
-                    const spec = this.spec.flags.find(f => f.name === flagName);
+                    const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
                         return {
                             data: null,
@@ -113,7 +113,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                             error: `Flag '--${flagName}': ${coerced.error}`
                         }
                     }
-                    flags[flagName] = coerced.value;
+                    flags[spec.name] = coerced.value;
 
                 } else {
 
@@ -126,7 +126,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         }
                     }
 
-                    const spec = this.spec.flags.find(f => f.name === flagName);
+                    const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
                         return {
                             data: null,
@@ -137,7 +137,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     if (spec.type === "boolean") {
 
-                        flags[flagName] = true;
+                        flags[spec.name] = true;
 
                     } else {
 
@@ -150,7 +150,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                                 error: `Flag '--${flagName}': ${coerced.error}`
                             }
                         }
-                        flags[flagName] = coerced.value;
+                        flags[spec.name] = coerced.value;
 
                         index++; // consume the value token
 
@@ -470,6 +470,7 @@ export namespace CLICommandArg.Flag {
 
         export interface Base<NameT extends string, TypeT extends ArgType> {
             name: NameT;
+            aliases?: string[];
             type: TypeT;
             shortName?: string;
             description?: string;

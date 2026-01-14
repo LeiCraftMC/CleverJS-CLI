@@ -13,7 +13,7 @@ describe("Argument Parsing for commands", () => {
         ],
         flags: [
             { name: "verbose", shortName: "v", type: "boolean", description: "Enable verbose logging" },
-            { name: "timeout", shortName: "t", type: "number", description: "Timeout in seconds", default: 30 }
+            { name: "timeout", shortName: "t", type: "number", description: "Timeout in seconds", default: 30, aliases: ["time"] }
             
         ]
     });
@@ -33,6 +33,52 @@ describe("Argument Parsing for commands", () => {
                 flags: {
                     verbose: true,
                     timeout: 60
+                }
+            }
+        });
+
+        expect(await parser.parse(["input.txt", "--verbose", "-t", "45"])).toEqual({
+            success: true,
+            error: null,
+            data: {
+                args: {
+                    input: "input.txt",
+                    output: undefined
+                },
+                flags: {
+                    verbose: true,
+                    timeout: 45
+                }
+            }
+        });
+
+        // alias for timeout
+        expect(await parser.parse(["input.txt", "--time", "50"])).toEqual({
+            success: true,
+            error: null,
+            data: {
+                args: {
+                    input: "input.txt",
+                    output: undefined
+                },
+                flags: {
+                    verbose: false,
+                    timeout: 50
+                }
+            }
+        });
+
+        expect(await parser.parse(["input.txt", "--time=50"])).toEqual({
+            success: true,
+            error: null,
+            data: {
+                args: {
+                    input: "input.txt",
+                    output: undefined
+                },
+                flags: {
+                    verbose: false,
+                    timeout: 50
                 }
             }
         });
