@@ -14,7 +14,7 @@ export interface CLILogger {
     error(message: string): void;
 }
 
-export interface CLICMDExecMeta {
+export interface CLICommandContext {
     readonly raw_args: string[];
     readonly raw_parent_args: string[];
     readonly environment: "runtime" | "shell";

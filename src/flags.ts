@@ -1,4 +1,4 @@
-import { Utils } from "./utils.js";
+import { CLIUtils } from "./utils.js";
 
 type AllowedTypes = "string" | "number" | "bool";
 
@@ -62,7 +62,7 @@ export class CMDFlagsParser<T extends FlagsSettings> {
 
         for (const data of flags) {
 
-            const [flagName, flagValue] = Utils.splitStrNTimes(data, "=", 1) as [FlagKeys<T>, string | undefined];
+            const [flagName, flagValue] = CLIUtils.splitStrNTimes(data, "=", 1) as [FlagKeys<T>, string | undefined];
             const flagSettings = this.flagsSettings[flagName];
 
             if (!flagSettings) {

@@ -1,9 +1,16 @@
+import { CLICommandArg } from "./args.js";
 import { CLIBaseCommand } from "./command.js";
 import { CLICMDExecEnvSpec } from "./types.js";
 
 export class CLIUtils {
 
-    static canRunInCurrentEnvironment(currentENV: CLICMDExecEnvSpec, cmd: CLIBaseCommand) {
+    static isValidCommandName(name: string): boolean {
+        // Command names should not contain spaces or special characters or be empty
+        const commandNameRegex = /^[a-zA-Z0-9-_]+$/;
+        return commandNameRegex.test(name);
+    }
+
+    static canRunInCurrentEnvironment(currentENV: CLICMDExecEnvSpec, cmd: CLIBaseCommand.ICommand<CLICommandArg.ArgSpecDefault>): boolean {
         if (cmd.allowedEnvironment === "all") return true;
         if (currentENV === "shell") {
             return cmd.allowedEnvironment === "shell";
@@ -19,11 +26,7 @@ export class CLIUtils {
         return parent_args_str;
     }
 
-}
-
-export namespace Utils {
-
-    export function splitStrNTimes(str: string, delim: string, count: number) {
+    static splitStrNTimes(str: string, delim: string, count: number) {
         const parts = str.split(delim);
         const tail = parts.slice(count).join(delim);
         const result = parts.slice(0,count);

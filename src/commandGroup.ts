@@ -1,43 +1,63 @@
 import { CLICommandArg } from "./args";
 import { type CLIBaseCommand } from "./command";
-import { CLICMDAlias, CLICMDExecEnvSpec } from "./types";
+import { CLICMDAlias, CLICMDExecEnvSpec, CLICommandContext } from "./types";
+import { CLIUtils } from "./utils";
 
-export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault = CLICommandArg.ArgSpecDefault> implements CLISubCommandGroup.IGroup {
+export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault = CLICommandArg.ArgSpecDefault> implements CLISubCommandGroup.IGroup<ArgsSpecT> {
 
-    readonly description: string;
-    readonly allowedEnvironment: CLICMDExecEnvSpec = "all";
+    readonly name: string;
+    readonly description: string
+    readonly args: ArgsSpecT;
+    readonly aliases: CLICMDAlias[];
+    readonly allowedEnvironment: CLICMDExecEnvSpec;
 
-    protected readonly registry: Record<string, CLIBaseCommand.ICommand | CLISubCommandGroup.IGroup> = {};
+    readonly middleware: CLISubCommandGroup.IMiddleware<ArgsSpecT>[];
 
-    constructor(options: CLISubCommandGroup.Options) {
-        
-        this.prefix = options.prefix;
+    protected readonly registry: Map<string, CLIBaseCommand.ICommand<ArgsSpecT> | CLISubCommandGroup.IGroup<ArgsSpecT>> = new Map();
+
+    constructor(options: CLISubCommandGroup.Options<ArgsSpecT>) {
+
+        if (!CLIUtils.isValidCommandName(options.name)) {
+            throw new Error(`Invalid command name: "${options.name}". Command names must be non-empty strings containing only alphanumeric characters, dashes, and underscores.`);
+        }
+
+        this.name = options.name;
         this.description = options.description || "No description provided.";
-        this.prefixAliases = options.prefixAliases || [];
+        this.args = options.args || { args: [], flags: [] } as any as ArgsSpecT;
+        this.aliases = options.aliases || [];
         this.allowedEnvironment = options.allowedEnvironment || "all";
+
+        this.middleware = [];
 
     }
 
-    public register(command: CLIBaseCommand.ICommand | CLISubCommandGroup.IGroup): this {
+    public use(mw: CLISubCommandGroup.IMiddleware<ArgsSpecT>): this {
+        this.middleware.push(mw);
+        return this;
+    }
 
-        this.registry[command.name.toLowerCase()] = command;
+    public register(command: CLIBaseCommand.ICommand<ArgsSpecT>): this;
+    public register(command: CLISubCommandGroup.IGroup<ArgsSpecT>): this;
+    public register(command: CLIBaseCommand.ICommand<ArgsSpecT> | CLISubCommandGroup.IGroup<ArgsSpecT>): this {
+
+        this.registry.set(command.name.toLowerCase(), command);
 
         for (const alias of command.aliases) {
             const alias_name = typeof alias === "string" ? alias : alias.name;
-            this.registry[alias_name.toLowerCase()] = command;
+            this.registry.set(alias_name.toLowerCase(), command);
         }
 
         return this;
     }
 
-    protected async run_help(meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
+    protected async run_help(ctx: CLICommandContext) {
+        const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
 
         let help_message = "Available commands:\n" +
                            ` - ${parent_args_str}help: Show available commands`;
 
         for (const [alias, cmd] of Object.entries(this.registry)) {
-            if (!CLIUtils.canRunInCurrentEnvironment(meta.environment, cmd)) continue;
+            if (!CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) continue;
             if (alias !== cmd.name) {
                 if (cmd.aliases.some(a => (a as any).showInHelp)) {
                     help_message += `\n - ${parent_args_str}${alias}: Alias for ${cmd.name}`;
@@ -48,53 +68,61 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             help_message += `\n - ${parent_args_str}${alias}: ${cmd.description}`;
         }
 
-        meta.logger.info(help_message);
+        ctx.logger.info(help_message);
     }
 
-    protected async run_empty(meta: CLICMDExecMeta) {
-        return await this.run_help(meta);
+    protected async run_empty(ctx: CLICommandContext) {
+        return await this.run_help(ctx);
     }
 
-    protected async run_notFound(command_name: string, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
-        meta.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
+    protected async run_notFound(command_name: string, ctx: CLICommandContext) {
+        const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
+        ctx.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
     }
 
-    protected async run_sub_help(cmd: CLIBaseCommand, meta: CLICMDExecMeta) {
-        const parent_args_str = CLIUtils.parseParentArgs(meta.raw_parent_args, true);
-        meta.logger.info(
+    protected async run_sub_help(cmd: CLIBaseCommand, ctx: CLICommandContext) {
+        const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
+        ctx.logger.info(
             `Command '${parent_args_str}${cmd.name}':\n` +
             `Description: ${cmd.description}\n` +
+            // generate usage string form args spec
             `Usage: '${parent_args_str}${cmd.usage}'\n` +
             `Aliases: ${cmd.aliases.join(", ")}`
         );
     }
 
-    async run(args: string[], meta: CLICMDExecMeta) {
+    async dispatch(args: string[], ctx: CLICommandContext) {
         const command_name = args.shift();
-        if (!command_name) return await this.run_empty(meta);
+        if (!command_name) return await this.run_empty(ctx);
 
         if (
             command_name === "help" ||
             command_name === "--help" ||
             command_name === "-h"
-        ) return await this.run_help(meta);
+        ) return await this.run_help(ctx);
 
-        const cmd = this.registry[command_name];
-        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(meta.environment, cmd)) return await this.run_notFound(command_name, meta);
+        const cmd = this.registry.get(command_name);
+        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.run_notFound(command_name, ctx);
 
-        if (args[0] === "--help" || args[0] === "-h") return await this.run_sub_help(cmd, meta);
+        if (args[0] === "--help" || args[0] === "-h") return await this.run_sub_help(cmd, ctx);
 
-        meta.raw_parent_args.push(command_name);
-        return await cmd.run(args, meta);
+        ctx.raw_parent_args.push(command_name);
+        return await cmd.run(args, ctx);
     }
 
 }
 
 export namespace CLISubCommandGroup {
 
-    export interface IGroup extends CLIBaseCommand.ICommand {}
+    export interface IMiddleware<ArgsT extends CLICommandArg.ArgSpecDefault> {
+        (args: ArgsT, ctx: CLICommandContext, next: () => Promise<void>): Promise<void>;
+    }
 
-    export interface Options extends CLIBaseCommand.Options {}
+    export interface IGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault> extends Omit<CLIBaseCommand.ICommand<ArgsSpecT>, "run"> {
+        middleware: IMiddleware<ArgsSpecT>[];
+        dispatch(args: string[], ctx: CLICommandContext): Promise<void>;
+    }
+
+    export interface Options<ArgsSpecT extends CLICommandArg.ArgSpecDefault> extends CLIBaseCommand.Options<ArgsSpecT> {}
 
 }
