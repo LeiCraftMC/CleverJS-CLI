@@ -25,7 +25,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         error: `Missing required argument: '${argSpec.name}'`
                     };
 
-                } else if ((argSpec as any).default !== undefined || (argSpec as any).default !== null) {
+                } else if ((argSpec as any).default !== undefined && (argSpec as any).default !== null) {
 
                     (resultData.data.args as Record<string, any>)[argSpec.name] = (argSpec as any).default;
 
@@ -48,7 +48,7 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         error: `Missing required flag: '--${flagSpec.name}'`
                     };
 
-                } else if ((flagSpec as any).default !== undefined || (flagSpec as any).default !== null) {
+                } else if ((flagSpec as any).default !== undefined && (flagSpec as any).default !== null) {
 
                     (resultData.data.flags as Record<string, any>)[flagSpec.name] = (flagSpec as any).default;
 
