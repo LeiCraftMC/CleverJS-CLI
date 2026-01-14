@@ -55,6 +55,37 @@ describe("Argument Parsing", () => {
 
     test("should return error for missing required argument", async () => {
         
+        expect(await parser.parse(["--verbose"])).toEqual({
+            success: false,
+            error: "Missing required argument: 'input'",
+            data: null
+        });
+
+        expect(await parser.parse([])).toEqual({
+            success: false,
+            error: "Missing required argument: 'input'",
+            data: null
+        });
+
+        expect(await parser.parse(["--timeout=45"])).toEqual({
+            success: false,
+            error: "Missing required argument: 'input'",
+            data: null
+        });
+
+        // syntax error
+        expect(await parser.parse(["input.txt", "--timeout"])).toEqual({
+            success: false,
+            error: "Flag '--timeout': No value provided",
+            data: null
+        });
+
+        expect(await parser.parse(["input.txt", "--timeout=abc"])).toEqual({
+            success: false,
+            error: "Flag '--timeout': Expected number, got \"abc\"",
+            data: null
+        });
+
     });
 
 });
