@@ -639,11 +639,14 @@ export namespace CLICommandArgParser {
                     type: infer ArgT,
                     required?: infer IsRequiredT
                     allowedValues?: infer AllowedValuesT
+                    default?: infer DefaultT
                 } ? ArgT extends CLICommandArg.ArgType.KeyValue
 
                     ? IsRequiredT extends true
                         ? CLICommandArg.ArgType.TypesMapping[ArgT]
-                        : CLICommandArg.ArgType.TypesMapping[ArgT] | undefined
+                        : DefaultT extends CLICommandArg.ArgType.TypesMapping[ArgT]
+                            ? CLICommandArg.ArgType.TypesMapping[ArgT]
+                            : CLICommandArg.ArgType.TypesMapping[ArgT] | undefined
                     
                     : ArgT extends "boolean"
                         // Boolean args are always false by default
@@ -667,12 +670,15 @@ export namespace CLICommandArgParser {
                         name: ArgNameT;
                         type: infer ArgT,
                         required?: infer IsRequiredT
+                        default?: infer DefaultT
                         allowedValues?: infer AllowedValuesT
                     } ? ArgT extends CLICommandArg.ArgType.KeyValue
 
                         ? IsRequiredT extends true
                             ? CLICommandArg.ArgType.TypesMapping[ArgT]
-                            : CLICommandArg.ArgType.TypesMapping[ArgT] | undefined
+                            : DefaultT extends CLICommandArg.ArgType.TypesMapping[ArgT]
+                                ? CLICommandArg.ArgType.TypesMapping[ArgT]
+                                : CLICommandArg.ArgType.TypesMapping[ArgT] | undefined
                         
                         : ArgT extends "boolean"
                             // Boolean args are always false by default
