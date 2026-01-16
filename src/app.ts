@@ -6,17 +6,29 @@ export interface CLIApp {
     /**
      * @deprecated Use {@link CLIApp.handle} instead.
      */
-    dispatch(args: string[], ctx: CLICommandContext): Promise<void>;
+    dispatch(args: string[], ctx: CLICommandContext): Promise<boolean>;
 }
 
 export class CLIApp extends CLISubCommandGroup {
 
     protected readonly logger: CLILogger;
-    
+
+    protected readonly settings: {
+        exitOnError?: boolean;
+    }
+
+    /**
+     * 
+     * @param options Configuration options for the CLI application.
+     */
     constructor(options?: {
         logger?: CLILogger,
         allowedEnvironment?: CLICMDExecEnv,
-        globalFlags?: CLICommandArg.Flag.SpecList
+        globalFlags?: CLICommandArg.Flag.SpecList,
+        /**
+         * Whether to exit the process with a non-zero code on command errors. Defaults to `true` when running in a shell environment.
+         */
+        exitOnError?: boolean
     }) {
         super({
             name: "root",
@@ -27,6 +39,10 @@ export class CLIApp extends CLISubCommandGroup {
                 flags: options?.globalFlags || []
             }
         });
+
+        this.settings = {
+            exitOnError: options?.exitOnError
+        };
 
         this.logger = options?.logger || console;
     }
@@ -47,15 +63,23 @@ export class CLIApp extends CLISubCommandGroup {
             logger: this.logger
         }
 
+        let result: boolean;
+
         if (typeof input === "string") {
 
-            await this.dispatch(
+            result = await this.dispatch(
                 input.trim().toLowerCase().split(" ").filter(arg => arg),
                 default_meta
             );
 
         } else {
-            await this.dispatch(input.map(arg => arg.toLowerCase()), default_meta);
+            result = await this.dispatch(input.map(arg => arg.toLowerCase()), default_meta);
+        }
+
+        if (this.settings.exitOnError || (this.settings.exitOnError === undefined && env === "shell")) {
+            if (!result) {
+                process.exit(1);
+            }
         }
     }
 

@@ -24,7 +24,7 @@ export abstract class CLIBaseCommand<ArgsSpecT extends CLICommandArg.ArgSpecDefa
         this.allowedEnvironment = options.allowedEnvironment || "all";
     }
     
-    abstract run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<void>;
+    abstract run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;
 
 }
 
@@ -52,7 +52,7 @@ export namespace CLIBaseCommand {
         readonly aliases: CLICMDAlias[];
         readonly allowedEnvironment: CLICMDExecEnvSpec;
         
-        run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<void>;
+        run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;
     }
 
 }

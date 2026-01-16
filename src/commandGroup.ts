@@ -125,15 +125,21 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
         return result;
     }
 
-    async dispatch(args: string[], ctx: CLICommandContext) {
+    async dispatch(args: string[], ctx: CLICommandContext): Promise<boolean> {
         const command_name = args.shift();
-        if (!command_name) return await this.onEmpty(ctx);
+        if (!command_name) {
+            await this.onEmpty(ctx);
+            return true;
+        }
 
         if (
             command_name === "help" ||
             command_name === "--help" ||
             command_name === "-h"
-        ) return await this.onHelp(ctx);
+        ) {
+            await this.onHelp(ctx);
+            return true;
+        }
 
         const groupArgParser = new CLICommandArgParser({
 
@@ -152,21 +158,25 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
         if (!parsedGroupArgs.success) {
             ctx.logger.error(`Error parsing arguments for command group '${this.name}': ${parsedGroupArgs.error}`);
-            return;
+            return false;
         }
 
         const restArgs = (parsedGroupArgs.data.args as any)["__rest_args"] as string[];
 
         const continueExecution = await this.callNextMiddleware(0, parsedGroupArgs.data as CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx);
-        if (!continueExecution) return;
+        if (!continueExecution) return false;
     
         const cmd = this.registry.get(command_name);
-        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) return await this.onNotFound(command_name, ctx);
+        if (!cmd || !CLIUtils.canRunInCurrentEnvironment(ctx.environment, cmd)) {
+            await this.onNotFound(command_name, ctx);
+            return false;
+        }
 
         if (restArgs[0] === "--help" || restArgs[0] === "-h") {
 
             if (cmd instanceof CLIBaseCommand) {
-                return await this.onSubHelp(cmd, ctx);
+                await this.onSubHelp(cmd, ctx);
+                return true;
             }
             // if group, let the subgroup handle help
         }
@@ -183,7 +193,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
 
                 if (!parsedCmdArgs.success) {
                     ctx.logger.error(`Error parsing arguments for command '${cmd.name}': ${parsedCmdArgs.error}`);
-                    return;
+                    return false;
                 }
 
                 return await cmd.run(parsedCmdArgs.data, ctx);
@@ -191,7 +201,7 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
             return await cmd.run({ args: {}, flags: {} } as any, ctx);
         }
 
-        await cmd.dispatch(restArgs, ctx);
+        return await cmd.dispatch(restArgs, ctx);
     }
 
 }
@@ -203,7 +213,7 @@ export namespace CLISubCommandGroup {
     }
 
     export interface IGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault> extends Omit<CLIBaseCommand.ICommand<ArgsSpecT>, "run"> {
-        dispatch(args: string[], ctx: CLICommandContext): Promise<void>;
+        dispatch(args: string[], ctx: CLICommandContext): Promise<boolean>;
     }
 
     export interface Options<ArgsSpecT extends CLICommandArg.ArgSpecDefault> extends CLIBaseCommand.Options<ArgsSpecT> {}
