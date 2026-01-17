@@ -88,13 +88,25 @@ export class CLISubCommandGroup<ArgsSpecT extends CLICommandArg.ArgSpecDefault =
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
         const usageStr = CLIUtils.generateUsageByArgSpec(cmd.args, true);
 
-        ctx.logger.info(
-            `Command '${parent_args_str}${cmd.name}':\n` +
-            `Description: ${cmd.description}\n` +
+        const lines = [
+            `Command '${parent_args_str}${cmd.name}':`,
+            `Description: ${cmd.description}`,
             // generate usage string form args spec
-            `Usage: '${parent_args_str}${cmd.name}${usageStr}'\n` +
+            `Usage: '${parent_args_str}${cmd.name}${usageStr}'`,
             `Aliases: ${ cmd.aliases.join(", ") || "None" }`
-        );
+        ];
+
+        if (cmd.args.args.length > 0) {
+            lines.push(`\nPositional Arguments:`);
+            lines.push(CLIUtils.generateArgsHelpList(cmd.args));
+        }
+
+        if (cmd.args.flags.length > 0) {
+            lines.push(`\nFlags:`);
+            lines.push(CLIUtils.generateFlagsHelpList(cmd.args));
+        }
+
+        ctx.logger.info(lines.join("\n"));
     }
 
     protected async callNextMiddleware(index: 0, parsedArgs: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;

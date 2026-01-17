@@ -146,7 +146,10 @@ describe("Argument Parsing for SubCommandGroups", () => {
         args: [
             { name: "input", type: "string", required: true, description: "Input file path" },
             { name: "output", type: "string", required: false, description: "Output file path" },
-            { name: "rest", type: "string", required: false, description: "Rest arguments", variadic: true }
+            { name: "extra", type: "enum", required: false, description: "Extra argument", allowedValues: ["opt1", "opt2", "opt3"], default: "opt2"},
+            { name: "rest", type: "string", required: false, description: "Rest arguments", variadic: true, checkFN: (val: string[]) => {
+                return val.length <= 2 ? true : "A maximum of 2 values are allowed";
+            }}
         ],
         flags: [
             { name: "verbose", shortName: "v", type: "boolean", description: "Enable verbose logging" },
@@ -159,13 +162,14 @@ describe("Argument Parsing for SubCommandGroups", () => {
 
     test("should parse successfully with all arguments and flags", async () => {
 
-        expect(await parser.parse(["input.txt", "output.txt", "--verbose", "--timeout=60", "extra1", "--extra2"])).toEqual({
+        expect(await parser.parse(["input.txt", "output.txt", "opt2", "--verbose", "--timeout=60", "extra1", "--extra2"])).toEqual({
             success: true,
             error: null,
             data: {
                 args: {
                     input: "input.txt",
                     output: "output.txt",
+                    extra: "opt2",
                     rest: ["extra1", "--extra2"]
                 },
                 flags: {
@@ -173,6 +177,16 @@ describe("Argument Parsing for SubCommandGroups", () => {
                     timeout: 60
                 }
             }
+        });
+
+    });
+
+    test("should return error for exceeding variadic argument limit", async () => {
+        
+        expect(await parser.parse(["input.txt", "output.txt", "opt1", "val1", "val2", "val3"])).toEqual({
+            success: false,
+            error: "Argument 'rest': A maximum of 2 values are allowed",
+            data: null
         });
 
     });
@@ -189,7 +203,7 @@ describe("Argument Parsing for SubCommandGroups", () => {
 
     test("should create valid usage string", () => {
         const usage = CLIUtils.generateUsageByArgSpec(spec);
-        expect(usage).toBe("<input> [output] [--verbose|-v <value>] [--timeout|-t <value>] [rest...]");
+        expect(usage).toBe("<input> [output] [extra] [rest...]");
     });
 
 });

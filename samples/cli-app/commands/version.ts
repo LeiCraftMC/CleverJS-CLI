@@ -12,6 +12,7 @@ export class VersionCMD extends CLIBaseCommand {
 
     async run(args: any) {
         console.log("Version: 1.0.0");
+        return true;
     }
 
 

@@ -96,10 +96,25 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                     const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
-                        
-                        if ((this.spec.args[positionalIndex] as any).variadic) {
+
+                        const currentPositionalSpec = this.spec.args[positionalIndex];
+
+                        if ((currentPositionalSpec as any).variadic) {
                             // consume all remaining args if variadic
-                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            const remaining = argv.slice(index);
+
+                            if (currentPositionalSpec.checkFN) {
+                                const checkResult = await (currentPositionalSpec.checkFN as any)(remaining);
+                                if (checkResult !== true) {
+                                    return {
+                                        data: null,
+                                        success: false,
+                                        error: `Argument '${(currentPositionalSpec as any).name}': ${checkResult}`
+                                    }
+                                }
+                            }
+
+                            (positionals as any)[(currentPositionalSpec as any).name] = remaining;
                             break;
                         }
 
@@ -126,6 +141,18 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                             error: `Flag '--${flagName}': ${coerced.error}`
                         }
                     }
+
+                    if (spec.checkFN) {
+                        const checkResult = await (spec.checkFN as any)(coerced.value);
+                        if (checkResult !== true) {
+                            return {
+                                data: null,
+                                success: false,
+                                error: `Flag '--${flagName}': ${checkResult}`
+                            }
+                        }
+                    }
+
                     flags[spec.name] = coerced.value;
 
                 } else {
@@ -142,9 +169,24 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                     const spec = this.spec.flags.find(f => f.name === flagName) || this.spec.flags.find(f => f.aliases && f.aliases.includes(flagName));
                     if (!spec) {
                         
-                        if ((this.spec.args[positionalIndex] as any).variadic) {
+                        const currentPositionalSpec = this.spec.args[positionalIndex];
+
+                        if ((currentPositionalSpec as any).variadic) {
                             // consume all remaining args if variadic
-                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            const remaining = argv.slice(index);
+
+                            if (currentPositionalSpec.checkFN) {
+                                const checkResult = await (currentPositionalSpec.checkFN as any)(remaining);
+                                if (checkResult !== true) {
+                                    return {
+                                        data: null,
+                                        success: false,
+                                        error: `Argument '${(currentPositionalSpec as any).name}': ${checkResult}`
+                                    }
+                                }
+                            }
+
+                            (positionals as any)[(currentPositionalSpec as any).name] = remaining;
                             break;
                         }
 
@@ -170,6 +212,18 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                                 error: `Flag '--${flagName}': ${coerced.error}`
                             }
                         }
+
+                        if (spec.checkFN) {
+                            const checkResult = await (spec.checkFN as any)(coerced.value);
+                            if (checkResult !== true) {
+                                return {
+                                    data: null,
+                                    success: false,
+                                    error: `Flag '--${flagName}': ${checkResult}`
+                                }
+                            }
+                        }
+
                         flags[spec.name] = coerced.value;
 
                         index++; // consume the value token
@@ -200,9 +254,24 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                         const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                         if (!spec) {
                             
-                            if ((this.spec.args[positionalIndex] as any).variadic) {
+                            const currentPositionalSpec = this.spec.args[positionalIndex];
+
+                            if ((currentPositionalSpec as any).variadic) {
                                 // consume all remaining args if variadic
-                                (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                                const remaining = argv.slice(index);
+
+                                if (currentPositionalSpec.checkFN) {
+                                    const checkResult = await (currentPositionalSpec.checkFN as any)(remaining);
+                                    if (checkResult !== true) {
+                                        return {
+                                            data: null,
+                                            success: false,
+                                            error: `Argument '${(currentPositionalSpec as any).name}': ${checkResult}`
+                                        }
+                                    }
+                                }
+
+                                (positionals as any)[(currentPositionalSpec as any).name] = remaining;
                                 break;
                             }
 
@@ -220,6 +289,18 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                                 error: `Flag '-${flagChar}': ${coerced.error}`
                             }
                         }
+
+                        if (spec.checkFN) {
+                            const checkResult = await (spec.checkFN as any)(coerced.value);
+                            if (checkResult !== true) {
+                                return {
+                                    data: null,
+                                    success: false,
+                                    error: `Flag '-${flagChar}': ${checkResult}`
+                                }
+                            }
+                        }
+
                         flags[spec.name] = coerced.value;
                         
 
@@ -230,9 +311,24 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                             const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                             if (!spec) {
 
-                                if ((this.spec.args[positionalIndex] as any).variadic) {
+                                const currentPositionalSpec = this.spec.args[positionalIndex];
+
+                                if ((currentPositionalSpec as any).variadic) {
                                     // consume all remaining args if variadic
-                                    (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                                    const remaining = argv.slice(index);
+
+                                    if (currentPositionalSpec.checkFN) {
+                                        const checkResult = await (currentPositionalSpec.checkFN as any)(remaining);
+                                        if (checkResult !== true) {
+                                            return {
+                                                data: null,
+                                                success: false,
+                                                error: `Argument '${(currentPositionalSpec as any).name}': ${checkResult}`
+                                            }
+                                        }
+                                    }
+
+                                    (positionals as any)[(currentPositionalSpec as any).name] = remaining;
                                     break;
                                 }
 
@@ -259,9 +355,24 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                     const spec = this.spec.flags.find(f => (f as any).shortName === flagChar);
                     if (!spec) {
 
-                        if ((this.spec.args[positionalIndex] as any).variadic) {
+                        const currentPositionalSpec = this.spec.args[positionalIndex];
+
+                        if ((currentPositionalSpec as any).variadic) {
                             // consume all remaining args if variadic
-                            (positionals as any)[(this.spec.args[positionalIndex] as any).name] = argv.slice(index);
+                            const remaining = argv.slice(index);
+
+                            if (currentPositionalSpec.checkFN) {
+                                const checkResult = await (currentPositionalSpec.checkFN as any)(remaining);
+                                if (checkResult !== true) {
+                                    return {
+                                        data: null,
+                                        success: false,
+                                        error: `Argument '${(currentPositionalSpec as any).name}': ${checkResult}`
+                                    }
+                                }
+                            }
+
+                            (positionals as any)[(currentPositionalSpec as any).name] = remaining;
                             break;
                         }
 
@@ -286,6 +397,18 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                                 error: `Flag '-${flagChar}': ${coerced.error}`
                             }
                         }
+
+                        if (spec.checkFN) {
+                            const checkResult = await (spec.checkFN as any)(coerced.value);
+                            if (checkResult !== true) {
+                                return {
+                                    data: null,
+                                    success: false,
+                                    error: `Flag '-${flagChar}': ${checkResult}`
+                                }
+                            }
+                        }
+
                         flags[spec.name] = coerced.value;
                         index++; // consume the value token
 
@@ -308,7 +431,21 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
 
                 if ((positionalSpec as any).variadic) {
                     // consume all remaining args
-                    (positionals as any)[positionalSpec.name] = argv.slice(index);
+
+                    const remaining = argv.slice(index);
+
+                    if (positionalSpec.checkFN) {
+                        const checkResult = await (positionalSpec.checkFN as any)(remaining);
+                        if (checkResult !== true) {
+                            return {
+                                data: null,
+                                success: false,
+                                error: `Argument '${(positionalSpec as any).name}': ${checkResult}`
+                            }
+                        }
+                    }
+
+                    (positionals as any)[positionalSpec.name] = remaining;
                     break;
 
                 } else {
@@ -321,6 +458,18 @@ export class CLICommandArgParser<SpecT extends CLICommandArg.ArgSpecDefault> {
                             error: `Argument '${positionalSpec.name}': ${coerced.error}`
                         }
                     }
+
+                    if (positionalSpec.checkFN) {
+                        const checkResult = await (positionalSpec.checkFN as any)(coerced.value);
+                        if (checkResult !== true) {
+                            return {
+                                data: null,
+                                success: false,
+                                error: `Argument '${positionalSpec.name}': ${checkResult}`
+                            }
+                        }
+                    }
+
                     positionals[positionalSpec.name] = coerced.value;
 
                 }
@@ -515,6 +664,7 @@ export namespace CLICommandArg.Flag {
             type: TypeT;
             shortName?: string;
             description?: string;
+            checkFN?: CLICommandArg.Utils.CheckFN<TypeT>;
         }
 
         export interface RequiredKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
@@ -538,7 +688,9 @@ export namespace CLICommandArg.Flag {
             default: AllowedValuesT[number];
         }
 
-        export interface Boolean<NameT extends string> extends Base<NameT, "boolean"> {}
+        export interface Boolean<NameT extends string> extends Base<NameT, "boolean"> {
+            checkFN?: never;
+        }
     }
 
     export type SpecUnion = Spec<ArgType>;
@@ -547,45 +699,6 @@ export namespace CLICommandArg.Flag {
 }
 
 export namespace CLICommandArg.Positional {
-
-    export namespace Spec {
-        export interface Base<NameT extends string, TypeT extends ArgType> {
-            name: NameT;
-            type: TypeT;
-            description?: string;
-        }
-        
-
-        export interface RequiredKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
-            required: true;
-            default?: never;
-        }
-
-        export interface OptionalKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
-            required?: false;
-            default?: CLICommandArg.ArgType.TypesMapping[TypeT];
-        }
-
-        export interface RequiredEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
-            allowedValues: AllowedValuesT;
-            required: true;
-        }
-
-        export interface OptionalEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
-            allowedValues: AllowedValuesT
-            // enums must be either required or have a set default when optional
-            default: AllowedValuesT[number];
-        }
-
-        export interface Boolean<NameT extends string> extends Base<NameT, "boolean"> {}
-
-        // Optional: Support for "..." arguments (rest)
-        export interface Variadic<NameT extends string> extends Base<NameT, "string"> {
-            variadic: true;
-            required?: false;
-            default?: never;
-        }
-    }
 
     export type Spec<T extends ArgType> = {
         [K in T]: K extends ArgType.KeyValue
@@ -597,12 +710,64 @@ export namespace CLICommandArg.Positional {
                     : never
     }[T];
 
+    export namespace Spec {
+
+        export interface Base<NameT extends string, TypeT extends ArgType> {
+            name: NameT;
+            type: TypeT;
+            description?: string;
+            checkFN?: CLICommandArg.Utils.CheckFN<TypeT>;
+        }
+        
+
+        export interface RequiredKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
+            required: true;
+            default?: never;
+            veriadic?: false;
+        }
+
+        export interface OptionalKeyValue<NameT extends string, TypeT extends ArgType.KeyValue> extends Base<NameT, TypeT> {
+            required?: false;
+            default?: CLICommandArg.ArgType.TypesMapping[TypeT];
+            veriadic?: false;
+        }
+
+        export interface RequiredEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
+            allowedValues: AllowedValuesT;
+            required: true;
+        }
+
+        export interface OptionalEnum<NameT extends string, AllowedValuesT extends ReadonlyArray<string>> extends Base<NameT, "enum"> {
+            allowedValues: AllowedValuesT
+            // enums must be either required or have a set default when optional
+            default: AllowedValuesT[number];
+        }
+
+        export interface Boolean<NameT extends string> extends Base<NameT, "boolean"> {
+            checkFN?: never;
+        }
+
+        // Optional: Support for "..." arguments (rest)
+        export interface Variadic<NameT extends string> {
+            name: NameT;
+            type: "string";
+            description?: string;
+            variadic: true;
+            required?: false;
+            default?: never;
+            checkFN?: CLICommandArg.Utils.VariadicCheckFN;
+        }
+    }
+
     export type SpecUnion = Spec<ArgType>;
     export type SpecList = ReadonlyArray<SpecUnion>;
 
 }
 
 export namespace CLICommandArg.Utils {
+
+    export type CheckFN<TypeT extends CLICommandArg.ArgType> = (value: CLICommandArg.ArgType.TypesMapping[TypeT]) => true | string | Promise<true | string>;
+    export type VariadicCheckFN = (value: string[]) => true | string | Promise<true | string>;
 
     export type ValidateFlagSpecs<T extends CLICommandArg.Flag.SpecList> = {
         [K in keyof T]: T[K] extends { type: "enum", allowedValues: infer V extends ReadonlyArray<string>, default: infer D }
@@ -612,8 +777,21 @@ export namespace CLICommandArg.Utils {
             : T[K] // Not an enum or no default, return as is
     };
 
+
+    export type ValidatePositionalSpecs<T extends CLICommandArg.Positional.SpecList> = {
+        [K in keyof T]: T[K] extends { type: "enum", allowedValues: infer V extends ReadonlyArray<string>, default: infer D }
+            ? D extends V[number]
+                ? T[K] // It matches, return as is
+                : `Error: Default value "${D & string}" is not in allowedValues [${V[number] & string}] for enum argument "${T[K]['name'] & string}"`
+            : T[K] extends { variadic: true, checkFN: infer CFN }
+                ? CFN extends CLICommandArg.Utils.VariadicCheckFN
+                    ? T[K]
+                    : `Error: Variadic argument "${T[K]['name'] & string}" must have a valid checkFN of type VariadicCheckFN`
+                : T[K] // Not an enum or no default, return as is
+    };
+
     // Helper to validate Positional order (Required cannot follow Optional) & Variadic only at end
-    export type ValidatePositionalOrder<T extends CLICommandArg.Positional.SpecList> = 
+    export type ValidatePositionalOrder<SpecsT extends CLICommandArg.Positional.SpecList, T extends ValidatePositionalSpecs<SpecsT> = ValidatePositionalSpecs<SpecsT>> = 
         T extends readonly [infer Head, ...infer Tail]
             ? Head extends { variadic: true }
                 ? Tail extends []

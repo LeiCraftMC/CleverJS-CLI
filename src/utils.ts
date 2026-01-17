@@ -50,9 +50,9 @@ export class CLIUtils {
         }
 
         for (const flag of argSpec.flags) {
-            const flagPart = (flag as any).shortName ? `--${flag.name}|-${(flag as any).shortName}` : `--${flag.name}`;
-
-            parts.push((flag as any).required ? `${flagPart} <value>` : `[${flagPart} <value>]`);
+            if ((flag as any).required && flag.type !== "boolean") {
+                parts.push(`--${flag.name} <value>`);
+            }
         }
 
         if (veradicPart) {
@@ -62,6 +62,32 @@ export class CLIUtils {
             return " " + parts.join(" ");
         }
         return parts.join(" ");
+    }
+
+    static generateArgsHelpList(argSpec: CLICommandArg.ArgSpecDefault): string {
+
+        const lines: string[] = [];
+
+        for (const arg of argSpec.args) {
+            lines.push(`  ${arg.name}    ${arg.description || "No description provided."}`);
+        }
+
+        return lines.join("\n");
+    }
+    
+    static generateFlagsHelpList(argSpec: CLICommandArg.ArgSpecDefault): string {
+
+        const lines: string[] = [];
+        
+        for (const flag of argSpec.flags) {
+            const flagNames = [`--${flag.name}`];
+            if (flag.shortName) {
+                flagNames.push(`-${flag.shortName}`);
+            }
+            lines.push(`  ${flagNames.join(", ")}    ${flag.description || "No description provided."}`);
+        }
+
+        return lines.join("\n");
     }
 
 }

@@ -22,13 +22,21 @@ export class FooCMD extends CLIBaseCommand {
                         shortName: "v",
                         description: "Enable verbose output",
                         type: "boolean"
+                    },
+                    {
+                        name: "count",
+                        shortName: "c",
+                        description: "Number of times to execute",
+                        type: "number",
+                        default: 1
                     }
                 ]
             }
-        });
+         });
     }
 
     async run(args: any) {
         console.log("Foo: bar");
+        return true;
     }
 }
