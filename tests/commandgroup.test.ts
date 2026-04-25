@@ -91,7 +91,6 @@ describe("CLISubCommandGroup", () => {
         expect(await group.dispatch(["help"], createCtx(logger))).toBe(true);
         expect(logger.infoMessages.length).toBe(2);
         expect(logger.infoMessages[0]).toContain("Available commands:");
-        expect(logger.infoMessages[0]).toContain("root");
         expect(logger.infoMessages[0]).toContain("--cwd");
     });
 

@@ -2,7 +2,7 @@
     "extends": "./tsconfig/tsconfig.base.json",
     "compilerOptions": {
         "moduleResolution": "bundler",
-        "types": [ "node" ],
+        "types": [ "node", "bun" ],
         "strict": true
     }
 }
