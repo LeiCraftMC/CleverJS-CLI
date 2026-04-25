@@ -9,7 +9,7 @@ export interface CLIApp {
     dispatch(args: string[], ctx: CLICommandContext): Promise<boolean>;
 }
 
-export class CLIApp extends CLISubCommandGroup {
+export class CLIApp<FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList> extends CLISubCommandGroup<FlagSpecsT> {
 
     protected readonly logger: CLILogger;
 
@@ -24,7 +24,7 @@ export class CLIApp extends CLISubCommandGroup {
     constructor(options?: {
         logger?: CLILogger,
         allowedEnvironment?: CLICMDExecEnv,
-        globalFlags?: CLICommandArg.Flag.SpecList,
+        globalFlags?: FlagSpecsT,
         /**
          * Whether to exit the process with a non-zero code on command errors. Defaults to `true` when running in a shell environment.
          */
@@ -34,10 +34,7 @@ export class CLIApp extends CLISubCommandGroup {
             name: "root",
             description: "CLI Root",
             allowedEnvironment: "all",
-            args: {
-                args: [],
-                flags: options?.globalFlags || []
-            }
+            flags: options?.globalFlags
         });
 
         this.settings = {

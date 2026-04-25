@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { CLICommandArg, CLICommandArgParser, CLIUtils } from "@cleverjs/cli";
 
 
-
 describe("Argument Parsing for commands", () => {
     
     const spec = CLICommandArg.defineCLIArgSpecs({

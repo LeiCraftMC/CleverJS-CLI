@@ -607,22 +607,8 @@ export namespace CLICommandArg {
         }
     ): ArgSpec<PositionalT, FlagsT> {
 
-        const flagNames = new Set<string>();
-        const shortFlagNames = new Set<string>();
-
         if (spec.flags) {
-            for (const flagSpec of spec.flags) {
-                if (flagNames.has(flagSpec.name)) {
-                    throw new Error(`Duplicate argument name detected: ${flagSpec.name}`);
-                }
-                if (flagSpec.shortName) {
-                    if (shortFlagNames.has(flagSpec.shortName)) {
-                        throw new Error(`Duplicate argument short name detected: ${flagSpec.shortName}`);
-                    }
-                    shortFlagNames.add(flagSpec.shortName);
-                }
-                flagNames.add(flagSpec.name);
-            }
+            CLICommandArg.defineCLIFlagSpecs(spec.flags as any);
         }
 
         const argNames = new Set<string>();
@@ -640,6 +626,31 @@ export namespace CLICommandArg {
             flags: spec.flags ?? [] as any as FlagsT,
             args: spec.args ?? [] as any as PositionalT
         }
+    }
+
+    export function defineCLIFlagSpecs<const FlagsT extends CLICommandArg.Flag.SpecList>(
+        flags: FlagsT & CLICommandArg.Utils.ValidateFlagSpecs<FlagsT>
+    ): FlagsT {
+
+        const flagNames = new Set<string>();
+        const shortFlagNames = new Set<string>();
+
+        if (flags) {
+            for (const flagSpec of flags) {
+                if (flagNames.has(flagSpec.name)) {
+                    throw new Error(`Duplicate argument name detected: ${flagSpec.name}`);
+                }
+                if (flagSpec.shortName) {
+                    if (shortFlagNames.has(flagSpec.shortName)) {
+                        throw new Error(`Duplicate argument short name detected: ${flagSpec.shortName}`);
+                    }
+                    shortFlagNames.add(flagSpec.shortName);
+                }
+                flagNames.add(flagSpec.name);
+            }
+        }
+
+        return flags satisfies FlagsT;
     }
 
 }
