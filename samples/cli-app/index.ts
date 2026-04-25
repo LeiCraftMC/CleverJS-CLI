@@ -18,7 +18,7 @@ new CLIApp({
 
     .use(async (flags, ctx, next) => {
 
-        console.log(flags.cwd);
+        console.log("Flags", flags);
 
         // you can modify args or ctx here before passing to next middleware/command
         return await next();
