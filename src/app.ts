@@ -2,20 +2,28 @@ import { CLICommandArg } from "./args";
 import { CLISubCommandGroup } from "./commandGroup";
 import { CLICMDExecEnv, CLICommandContext, CLILogger } from "./types.js";
 
-export interface CLIApp {
+export interface CLIApp<
+    FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList,
+    StateT extends object = Record<string, never>
+> {
     /**
      * @deprecated Use {@link CLIApp.handle} instead.
      */
-    dispatch(args: string[], ctx: CLICommandContext): Promise<boolean>;
+    dispatch(args: string[], ctx: CLICommandContext<StateT>): Promise<boolean>;
 }
 
-export class CLIApp<FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList> extends CLISubCommandGroup<FlagSpecsT> {
+export class CLIApp<
+    FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList,
+    StateT extends object = Record<string, never>
+> extends CLISubCommandGroup<FlagSpecsT, StateT> {
 
     protected readonly logger: CLILogger;
 
     protected readonly settings: {
         exitOnError?: boolean;
     }
+
+    protected readonly defaultState: StateT;
 
     /**
      * 
@@ -25,6 +33,7 @@ export class CLIApp<FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandA
         logger?: CLILogger,
         allowedEnvironment?: CLICMDExecEnv,
         globalFlags?: FlagSpecsT,
+        state?: StateT,
         /**
          * Whether to exit the process with a non-zero code on command errors. Defaults to `true` when running in a shell environment.
          */
@@ -41,24 +50,30 @@ export class CLIApp<FlagSpecsT extends CLICommandArg.Flag.SpecList = CLICommandA
             exitOnError: options?.exitOnError
         };
 
+        this.defaultState = (options?.state || {}) as StateT;
+
         this.logger = options?.logger || console;
     }
 
-    protected async onEmpty(ctx: CLICommandContext) {
+    protected async onEmpty(ctx: CLICommandContext<StateT>) {
         //cli.cmd.info(`Command not recognized. Type "${CLIUtils.parsePArgs(parent_args, true)}help" for available commands.`);
         if (ctx.environment === "shell") {
             return await this.onHelp(ctx);
         }
     }
 
-    async handle(input: string | string[], env: CLICMDExecEnv = "shell") {
+    async handle(input: string | string[], env: CLICMDExecEnv = "shell", state?: Partial<StateT>) {
 
-        const default_meta: CLICommandContext = {
+        const default_meta = new CLICommandContext<StateT>({
             raw_args: [],
             raw_parent_args: [],
             environment: env,
-            logger: this.logger
-        }
+            logger: this.logger,
+            state: {
+                ...this.defaultState,
+                ...(state || {})
+            } as StateT
+        });
 
         let result: boolean;
 

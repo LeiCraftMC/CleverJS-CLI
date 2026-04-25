@@ -3,7 +3,10 @@ import { CLIBaseCommand } from "./command";
 import { CLICMDAlias, CLICMDExecEnvSpec, CLICommandContext } from "./types";
 import { CLIUtils } from "./utils";
 
-export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList> implements CLISubCommandGroup.IGroup<FlagsSpecT> {
+export class CLISubCommandGroup<
+    FlagsSpecT extends CLICommandArg.Flag.SpecList = CLICommandArg.Flag.SpecList,
+    StateT extends object = Record<string, never>
+> implements CLISubCommandGroup.IGroup<FlagsSpecT, StateT> {
 
     readonly name: string;
     readonly description: string
@@ -11,9 +14,9 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
     readonly aliases: CLICMDAlias[];
     readonly allowedEnvironment: CLICMDExecEnvSpec;
 
-    protected readonly middleware: CLISubCommandGroup.IMiddleware<FlagsSpecT>[];
+    protected readonly middleware: CLISubCommandGroup.IMiddleware<FlagsSpecT, StateT>[];
 
-    protected readonly registry: Map<string, CLIBaseCommand | CLISubCommandGroup> = new Map();
+    protected readonly registry: Map<string, CLIBaseCommand<any, StateT> | CLISubCommandGroup<any, StateT>> = new Map();
 
     constructor(options: CLISubCommandGroup.Options<FlagsSpecT>) {
 
@@ -33,14 +36,14 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
 
     }
 
-    public use(mw: CLISubCommandGroup.IMiddleware<FlagsSpecT>): this {
+    public use(mw: CLISubCommandGroup.IMiddleware<FlagsSpecT, StateT>): this {
         this.middleware.push(mw);
         return this;
     }
 
-    public register(command: CLIBaseCommand): this;
-    public register(command: CLISubCommandGroup): this;
-    public register(command: CLIBaseCommand | CLISubCommandGroup): this {
+    public register(command: CLIBaseCommand<any, StateT>): this;
+    public register(command: CLISubCommandGroup<any, StateT>): this;
+    public register(command: CLIBaseCommand<any, StateT> | CLISubCommandGroup<any, StateT>): this {
 
         this.registry.set(command.name.toLowerCase(), command);
 
@@ -52,7 +55,7 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
         return this;
     }
 
-    protected async onHelp(ctx: CLICommandContext) {
+    protected async onHelp(ctx: CLICommandContext<StateT>) {
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
 
         let help_message = "Available commands:\n" +
@@ -78,16 +81,16 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
         ctx.logger.info(help_message);
     }
 
-    protected async onEmpty(ctx: CLICommandContext) {
+    protected async onEmpty(ctx: CLICommandContext<StateT>) {
         return await this.onHelp(ctx);
     }
 
-    protected async onNotFound(command_name: string, ctx: CLICommandContext) {
+    protected async onNotFound(command_name: string, ctx: CLICommandContext<StateT>) {
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
         ctx.logger.info(`Command '${parent_args_str}${command_name}' not found. Type "${parent_args_str}help" for available commands.`);
     }
 
-    protected async onSubHelp(cmd: CLIBaseCommand, ctx: CLICommandContext) {
+    protected async onSubHelp(cmd: CLIBaseCommand<any, StateT>, ctx: CLICommandContext<StateT>) {
 
         const parent_args_str = CLIUtils.parseParentArgs(ctx.raw_parent_args, true);
         const usageStr = CLIUtils.generateUsageByArgSpec(cmd.args, true);
@@ -113,7 +116,7 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
         ctx.logger.info(lines.join("\n"));
     }
 
-    protected async callNextMiddleware(index: number, parsedFlags: CLICommandArgParser.ParsedFlags<FlagsSpecT>, ctx: CLICommandContext): Promise<boolean> {
+    protected async callNextMiddleware(index: number, parsedFlags: CLICommandArgParser.ParsedFlags<FlagsSpecT>, ctx: CLICommandContext<StateT>): Promise<boolean> {
 
         if (index >= this.middleware.length) {
             return true;
@@ -128,7 +131,7 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
         return shouldContinue;
     }
 
-    async dispatch(args: string[], ctx: CLICommandContext): Promise<boolean> {
+    async dispatch(args: string[], ctx: CLICommandContext<StateT>): Promise<boolean> {
 
         const groupFlagParser = new CLICommandArgParser({
 
@@ -213,12 +216,18 @@ export class CLISubCommandGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList =
 
 export namespace CLISubCommandGroup {
 
-    export interface IMiddleware<ArgsT extends CLICommandArg.Flag.SpecList> {
-        (args: CLICommandArgParser.ParsedFlags<ArgsT>, ctx: CLICommandContext, next: () => Promise<void>): Promise<void>;
+    export interface IMiddleware<
+        ArgsT extends CLICommandArg.Flag.SpecList,
+        StateT extends object = Record<string, never>
+    > {
+        (args: CLICommandArgParser.ParsedFlags<ArgsT>, ctx: CLICommandContext<StateT>, next: () => Promise<void>): Promise<void>;
     }
 
-    export interface IGroup<FlagsSpecT extends CLICommandArg.Flag.SpecList> extends Omit<CLIBaseCommand.ICommand<any>, "args" | "run"> {
-        dispatch(args: string[], ctx: CLICommandContext): Promise<boolean>;
+    export interface IGroup<
+        FlagsSpecT extends CLICommandArg.Flag.SpecList,
+        StateT extends object = Record<string, never>
+    > extends Omit<CLIBaseCommand.ICommand<any, StateT>, "args" | "run"> {
+        dispatch(args: string[], ctx: CLICommandContext<StateT>): Promise<boolean>;
         flags?: FlagsSpecT;
     }
 

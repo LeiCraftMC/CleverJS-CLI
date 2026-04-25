@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { CLIApp, CLIBaseCommand, CLICommandContext } from "@cleverjs/cli";
 
 function createTestContext(): CLICommandContext {
-	return {
+	return new CLICommandContext({
 		raw_args: [],
 		raw_parent_args: [],
 		environment: "runtime",
@@ -12,7 +12,7 @@ function createTestContext(): CLICommandContext {
 			warn: () => {},
 			error: () => {}
 		}
-	};
+	});
 }
 
 class TestCommand extends CLIBaseCommand {

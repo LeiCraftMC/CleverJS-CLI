@@ -3,7 +3,10 @@ import { CLICMDAlias, CLICMDExecEnvSpec, CLICommandContext } from "./types.js";
 import { CLISubCommandGroup } from "./commandGroup.js";
 import { CLICommandArg, CLICommandArgParser } from "./args.js";
 
-export abstract class CLIBaseCommand<ArgsSpecT extends CLICommandArg.ArgSpecDefault = CLICommandArg.ArgSpecDefault> implements CLIBaseCommand.ICommand<ArgsSpecT> {
+export abstract class CLIBaseCommand<
+    ArgsSpecT extends CLICommandArg.ArgSpecDefault = CLICommandArg.ArgSpecDefault,
+    StateT extends object = Record<string, never>
+> implements CLIBaseCommand.ICommand<ArgsSpecT, StateT> {
 
     readonly name: string;
     readonly description: string;
@@ -24,7 +27,7 @@ export abstract class CLIBaseCommand<ArgsSpecT extends CLICommandArg.ArgSpecDefa
         this.allowedEnvironment = options.allowedEnvironment || "all";
     }
     
-    abstract run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;
+    abstract run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext<StateT>): Promise<boolean>;
 
 }
 
@@ -45,14 +48,17 @@ export namespace CLIBaseCommand {
         allowedEnvironment?: CLICMDExecEnvSpec;
     }
 
-    export interface ICommand<ArgsSpecT extends CLICommandArg.ArgSpecDefault > {
+    export interface ICommand<
+        ArgsSpecT extends CLICommandArg.ArgSpecDefault,
+        StateT extends object = Record<string, never>
+    > {
         readonly name: string;
         readonly description: string;
         readonly args?: ArgsSpecT;
         readonly aliases: CLICMDAlias[];
         readonly allowedEnvironment: CLICMDExecEnvSpec;
         
-        run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext): Promise<boolean>;
+        run(args: CLICommandArgParser.ParsedArgs<ArgsSpecT>, ctx: CLICommandContext<StateT>): Promise<boolean>;
     }
 
 }

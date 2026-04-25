@@ -25,12 +25,12 @@ class MemoryLogger {
 }
 
 function createCtx(logger: MemoryLogger, env: "runtime" | "shell" = "runtime"): CLICommandContext {
-    return {
+    return new CLICommandContext({
         raw_args: [],
         raw_parent_args: [],
         environment: env,
         logger
-    };
+    });
 }
 
 class TrackCommand extends CLIBaseCommand {
